@@ -447,5 +447,166 @@ class TestExperimentationFrameworkSmoke(unittest.TestCase):
         self.assertEqual(result["status"], "insufficient_data")
 
 
+class TestSessionAnalyzer(unittest.TestCase):
+    """Test session analyzer with /insights data."""
+
+    def setUp(self):
+        self.tmp_dir = Path(tempfile.mkdtemp()) / ".claude"
+        self.tmp_dir.mkdir(parents=True)
+        (self.tmp_dir / "usage-data" / "session-meta").mkdir(parents=True)
+        (self.tmp_dir / "usage-data" / "facets").mkdir(parents=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp_dir.parent, ignore_errors=True)
+
+    def _write_session(self, session_id, user_msgs=5, duration=30,
+                       first_prompt="test prompt", output_tokens=1000,
+                       response_times=None, project="test-project"):
+        data = {
+            "session_id": session_id,
+            "project_path": f"/home/user/{project}",
+            "start_time": "2026-02-13T10:00:00Z",
+            "duration_minutes": duration,
+            "user_message_count": user_msgs,
+            "assistant_message_count": user_msgs * 5,
+            "tool_counts": {"Bash": 3, "Read": 2},
+            "input_tokens": 500,
+            "output_tokens": output_tokens,
+            "first_prompt": first_prompt,
+            "user_response_times": response_times or [60.0] * user_msgs,
+            "tool_errors": 0,
+        }
+        path = self.tmp_dir / "usage-data" / "session-meta" / f"{session_id}.json"
+        path.write_text(json.dumps(data), encoding="utf-8")
+
+    def _write_facet(self, session_id, outcome="fully_achieved",
+                     helpfulness="very_helpful", friction="", goal="Test goal"):
+        data = {
+            "session_id": session_id,
+            "underlying_goal": goal,
+            "outcome": outcome,
+            "claude_helpfulness": helpfulness,
+            "friction_detail": friction,
+            "friction_counts": {},
+        }
+        path = self.tmp_dir / "usage-data" / "facets" / f"{session_id}.json"
+        path.write_text(json.dumps(data), encoding="utf-8")
+
+    def test_no_data_returns_unavailable(self):
+        """Empty usage-data returns available=False."""
+        from token_craft.session_analyzer import SessionAnalyzer
+        empty = Path(tempfile.mkdtemp()) / ".claude"
+        empty.mkdir(parents=True)
+        analyzer = SessionAnalyzer(claude_dir=empty)
+        results = analyzer.analyze_all()
+        self.assertFalse(results["available"])
+        shutil.rmtree(empty.parent, ignore_errors=True)
+
+    def test_session_length_risk(self):
+        """Sessions over 25 messages flagged as risky."""
+        from token_craft.session_analyzer import SessionAnalyzer
+        self._write_session("s1", user_msgs=30, duration=120)
+        self._write_session("s2", user_msgs=5, duration=10)
+        self._write_session("s3", user_msgs=60, duration=300)
+
+        analyzer = SessionAnalyzer(claude_dir=self.tmp_dir)
+        results = analyzer.analyze_session_lengths()
+        self.assertEqual(results["count"], 2)
+        self.assertEqual(results["risky_sessions"][0]["risk"], "danger")
+        self.assertEqual(results["risky_sessions"][1]["risk"], "warning")
+
+    def test_cross_session_repetition(self):
+        """Same question across sessions detected."""
+        from token_craft.session_analyzer import SessionAnalyzer
+        self._write_session("s1", first_prompt="How to configure Cursor settings")
+        self._write_session("s2", first_prompt="How to configure Cursor settings")
+        self._write_session("s3", first_prompt="How to configure Cursor settings")
+        self._write_session("s4", first_prompt="Totally different question here")
+
+        analyzer = SessionAnalyzer(claude_dir=self.tmp_dir)
+        results = analyzer.detect_cross_session_repetition()
+        self.assertEqual(len(results["repeated_prompts"]), 1)
+        self.assertEqual(results["repeated_prompts"][0]["count"], 3)
+        self.assertEqual(results["total_repeated_sessions"], 2)
+
+    def test_claude_md_impact(self):
+        """CLAUDE.md size correctly measured."""
+        from token_craft.session_analyzer import SessionAnalyzer
+        # Create a CLAUDE.md file
+        claude_md = self.tmp_dir / "CLAUDE.md"
+        claude_md.write_text("x" * 12000, encoding="utf-8")  # ~3000 tokens
+
+        # Create stats-cache with message count
+        stats = {"totalMessages": 1000}
+        (self.tmp_dir / "stats-cache.json").write_text(
+            json.dumps(stats), encoding="utf-8"
+        )
+        self._write_session("s1")  # need at least one session
+
+        analyzer = SessionAnalyzer(claude_dir=self.tmp_dir)
+        results = analyzer.calculate_claude_md_impact()
+        # At least the file we created contributes ~3000 tokens
+        self.assertGreaterEqual(results["tokens_per_message"], 3000)
+        self.assertTrue(results["is_oversized"])
+        self.assertGreater(results["estimated_total_cost"], 0)
+
+    def test_failed_sessions(self):
+        """Not-achieved sessions identified with waste estimate."""
+        from token_craft.session_analyzer import SessionAnalyzer
+        self._write_session("s1", output_tokens=50000)
+        self._write_session("s2", output_tokens=10000)
+        self._write_facet("s1", outcome="not_achieved",
+                         friction="API errors", goal="Build dashboard")
+        self._write_facet("s2", outcome="fully_achieved")
+
+        analyzer = SessionAnalyzer(claude_dir=self.tmp_dir)
+        results = analyzer.analyze_failed_sessions()
+        self.assertEqual(results["count"], 1)
+        self.assertEqual(results["failed_sessions"][0]["output_tokens"], 50000)
+        self.assertGreater(results["estimated_wasted_cost"], 0)
+
+    def test_nudge_detection(self):
+        """Rapid-fire responses detected as nudges."""
+        from token_craft.session_analyzer import SessionAnalyzer
+        # Session with many fast responses
+        fast_times = [10.0, 15.0, 8.0, 12.0, 5.0, 20.0, 30.0, 10.0, 15.0, 8.0]
+        self._write_session("s1", user_msgs=10, response_times=fast_times)
+        # Normal session
+        normal_times = [200.0, 300.0, 250.0, 400.0, 350.0]
+        self._write_session("s2", user_msgs=5, response_times=normal_times)
+
+        analyzer = SessionAnalyzer(claude_dir=self.tmp_dir)
+        results = analyzer.detect_nudge_patterns()
+        self.assertEqual(results["count"], 1)
+
+    def test_full_analysis(self):
+        """analyze_all returns complete results."""
+        from token_craft.session_analyzer import SessionAnalyzer
+        self._write_session("s1", user_msgs=30)
+        self._write_session("s2", first_prompt="same question")
+        self._write_session("s3", first_prompt="same question")
+
+        analyzer = SessionAnalyzer(claude_dir=self.tmp_dir)
+        results = analyzer.analyze_all()
+        self.assertTrue(results["available"])
+        self.assertIn("session_risks", results)
+        self.assertIn("repetitions", results)
+        self.assertIn("claude_md_impact", results)
+        self.assertIn("failed_sessions", results)
+        self.assertIn("nudge_patterns", results)
+        self.assertIn("summary", results)
+
+    def test_format_report(self):
+        """Report formatting produces non-empty output."""
+        from token_craft.session_analyzer import SessionAnalyzer
+        self._write_session("s1", user_msgs=30)
+
+        analyzer = SessionAnalyzer(claude_dir=self.tmp_dir)
+        results = analyzer.analyze_all()
+        report = analyzer.format_report_section(results)
+        self.assertIn("Structural Efficiency", report)
+        self.assertIn("Session Length Risk", report)
+
+
 if __name__ == "__main__":
     unittest.main()

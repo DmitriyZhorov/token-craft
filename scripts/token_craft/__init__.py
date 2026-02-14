@@ -26,6 +26,7 @@ from .recommendation_tracker import RecommendationTracker
 from .experimentation import ExperimentationFramework
 from .pattern_library import PatternLibrary
 from .cost_alerts import CostAlerts
+from .session_analyzer import SessionAnalyzer
 
 __all__ = [
     "TokenCraftScorer",
@@ -46,4 +47,5 @@ __all__ = [
     "ExperimentationFramework",
     "PatternLibrary",
     "CostAlerts",
+    "SessionAnalyzer",
 ]

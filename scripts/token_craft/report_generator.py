@@ -17,6 +17,12 @@ try:
 except ImportError:
     _HAS_INSIGHTS = False
 
+try:
+    from .session_analyzer import SessionAnalyzer
+    _HAS_SESSION_ANALYZER = True
+except ImportError:
+    _HAS_SESSION_ANALYZER = False
+
 
 class ReportGenerator:
     """Generate user reports."""
@@ -90,6 +96,17 @@ class ReportGenerator:
         # Top recommendations
         recommendations = self._generate_recommendations(score_data, profile_data, history_data)
         sections.append(recommendations)
+
+        # Structural efficiency analysis (from /insights data)
+        if _HAS_SESSION_ANALYZER:
+            try:
+                analyzer = SessionAnalyzer()
+                session_results = analyzer.analyze_all()
+                session_section = analyzer.format_report_section(session_results)
+                if session_section:
+                    sections.append(session_section)
+            except Exception:
+                pass
 
         # Achievements
         if profile_data.get("achievements"):
