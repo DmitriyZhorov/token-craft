@@ -1,0 +1,156 @@
+{
+  "_metadata": {
+    "version": "1.1.0",
+    "last_updated": "2026-02-12",
+    "note": "Prices in USD per million tokens. Update this file as models and pricing change.",
+    "sources": [
+      "https://claude.com/pricing",
+      "https://aws.amazon.com/bedrock/pricing/",
+      "https://cloud.google.com/vertex-ai/pricing"
+    ]
+  },
+
+  "deployment_methods": {
+    "direct_api": {
+      "name": "Anthropic Direct API",
+      "description": "Direct access via api.anthropic.com",
+      "models": {
+        "claude-opus-4-6": {
+          "input_price": 15.00,
+          "output_price": 75.00,
+          "cache_write_price": 18.75,
+          "cache_read_price": 1.50,
+          "context_window": 200000,
+          "note": "Most capable model, best for complex tasks"
+        },
+        "claude-sonnet-4-5": {
+          "input_price": 3.00,
+          "output_price": 15.00,
+          "cache_write_price": 3.75,
+          "cache_read_price": 0.30,
+          "context_window": 200000,
+          "note": "Best balance of intelligence and speed"
+        },
+        "claude-haiku-4-5": {
+          "input_price": 0.80,
+          "output_price": 4.00,
+          "cache_write_price": 1.00,
+          "cache_read_price": 0.08,
+          "context_window": 200000,
+          "note": "Fastest and most affordable"
+        },
+        "claude-sonnet-3-5": {
+          "input_price": 3.00,
+          "output_price": 15.00,
+          "cache_write_price": 3.75,
+          "cache_read_price": 0.30,
+          "context_window": 200000,
+          "note": "Previous generation Sonnet"
+        }
+      }
+    },
+
+    "aws_bedrock": {
+      "name": "AWS Bedrock",
+      "description": "Claude via Amazon Bedrock",
+      "pricing_multiplier": 2.0,
+      "note": "Bedrock typically costs ~2x direct API pricing",
+      "models": {
+        "claude-opus-4-6": {
+          "input_price": 30.00,
+          "output_price": 150.00,
+          "batch_input_price": 15.00,
+          "batch_output_price": 75.00,
+          "context_window": 200000,
+          "regions": ["us-east-1", "us-west-2", "eu-central-1", "eu-west-1"]
+        },
+        "claude-sonnet-4-5": {
+          "input_price": 6.00,
+          "output_price": 30.00,
+          "batch_input_price": 3.00,
+          "batch_output_price": 15.00,
+          "cache_write_price": 7.50,
+          "cache_read_price": 0.60,
+          "context_window": 200000,
+          "regions": ["us-east-1", "us-west-2", "eu-central-1", "eu-west-1"]
+        },
+        "claude-haiku-4-5": {
+          "input_price": 1.60,
+          "output_price": 8.00,
+          "batch_input_price": 0.80,
+          "batch_output_price": 4.00,
+          "context_window": 200000,
+          "regions": ["us-east-1", "us-west-2", "eu-central-1", "eu-west-1"]
+        },
+        "claude-sonnet-3-5": {
+          "input_price": 6.00,
+          "output_price": 30.00,
+          "batch_input_price": 3.00,
+          "batch_output_price": 15.00,
+          "cache_write_price": 7.50,
+          "cache_read_price": 0.60,
+          "context_window": 200000,
+          "regions": ["us-east-1", "us-east-2", "us-west-2", "eu-central-1", "eu-west-1", "eu-central-2", "eu-west-3"]
+        }
+      }
+    },
+
+    "google_vertex": {
+      "name": "Google Vertex AI",
+      "description": "Claude via Google Cloud Vertex AI",
+      "note": "Pricing varies by region and may require custom quotes. Contact Google Cloud sales.",
+      "status": "limited_availability",
+      "models": {
+        "claude-sonnet-4-5": {
+          "input_price": null,
+          "output_price": null,
+          "note": "Contact Google Cloud for pricing"
+        },
+        "claude-opus-4-6": {
+          "input_price": null,
+          "output_price": null,
+          "note": "Contact Google Cloud for pricing"
+        }
+      }
+    }
+  },
+
+  "cost_calculations": {
+    "typical_user_monthly": {
+      "sessions_per_month": 80,
+      "avg_tokens_per_session": 15000,
+      "input_output_ratio": 0.3,
+      "note": "Typical user: 80 sessions/month, 15K tokens/session, 30% input / 70% output"
+    },
+    "optimized_user_monthly": {
+      "sessions_per_month": 80,
+      "avg_tokens_per_session": 10000,
+      "input_output_ratio": 0.3,
+      "note": "Optimized user: Same sessions but 33% fewer tokens"
+    }
+  },
+
+  "historical_pricing": {
+    "note": "Track pricing changes over time",
+    "changes": [
+      {
+        "date": "2026-02-12",
+        "event": "Claude 4.5/4.6 pricing established",
+        "models": ["claude-opus-4-6", "claude-sonnet-4-5", "claude-haiku-4-5"]
+      },
+      {
+        "date": "2024-06-20",
+        "event": "Claude 3.5 Sonnet launch",
+        "model": "claude-sonnet-3-5",
+        "direct_api_input": 3.00,
+        "direct_api_output": 15.00
+      }
+    ]
+  },
+
+  "user_configuration": {
+    "default_deployment": "direct_api",
+    "default_model": "claude-sonnet-4-5",
+    "note": "Users can override in user_profile.json"
+  }
+}
