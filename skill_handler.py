@@ -91,7 +91,7 @@ class TokenCraftHandler:
         Returns:
             Score data with v3.0 metrics
         """
-        scorer = TokenCraftScorer(history_data, stats_data, user_rank=user_rank, user_profile=self.profile.get_current_state())
+        scorer = TokenCraftScorer(history_data, stats_data, rank=user_rank, user_profile=self.profile.get_current_state())
         score_data = scorer.calculate_total_score(previous_snapshot)
 
         return score_data
