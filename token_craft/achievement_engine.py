@@ -1,14 +1,15 @@
 """
 Achievement System
 
-Gamification engine tracking 30+ achievements across 7 categories:
+Gamification engine tracking 34 achievements across 8 categories:
 - Progression (5): Rank milestones
 - Excellence (5): Category mastery
 - Streaks (3): Consecutive improvement rewards
 - Combos (3): Multi-category excellence
 - Exploration (4): Session volume milestones
-- Special (5): Unique challenges
+- Special (9): Unique challenges and best practices
 - Sustainability (5): Healthy optimization patterns
+- Adaptability (New): Multi-tool and multi-model efficiency
 """
 
 from typing import Dict, List, Optional
@@ -321,6 +322,43 @@ class AchievementEngine:
             "Achieve 75%+ efficiency with 20% fewer sessions than baseline",
             125,
             "🧠",
+        ),
+        # Special (4 more) - Best practices from industry standards
+        Achievement(
+            "special_concise",
+            "Concise Communicator",
+            "Special",
+            "Optimize response length without sacrificing clarity",
+            "Maintain <20% bloat in average response (vs baseline)",
+            75,
+            "📏",
+        ),
+        Achievement(
+            "special_flawless",
+            "Flawless Execution",
+            "Special",
+            "Complete sessions without corrections or reworks",
+            "5 consecutive sessions with zero re-runs or corrections",
+            100,
+            "✅",
+        ),
+        Achievement(
+            "special_model_maestro",
+            "Model Maestro",
+            "Special",
+            "Effectively use multiple models for different tasks",
+            "Use 3+ different models with 75%+ efficiency across all",
+            100,
+            "🎛️",
+        ),
+        Achievement(
+            "special_batch_master",
+            "Batch Master",
+            "Special",
+            "Process multiple related tasks efficiently in sequence",
+            "Complete 3+ related tasks in single session with 20%+ efficiency gain",
+            75,
+            "📦",
         ),
     ]
 

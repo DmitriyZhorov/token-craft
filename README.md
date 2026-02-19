@@ -1,6 +1,6 @@
 # Token-Craft v3.0
 
-**Gamified LLM token optimization tool** that analyzes Claude Code usage patterns and provides prescriptive insights through space-themed ranks and achievements.
+**Gamified LLM token optimization tool** that analyzes LLM usage patterns (Claude Code, Cursor, or any AI platform) and provides prescriptive insights through space-themed ranks and achievements.
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -209,13 +209,13 @@ Rewards consistency:
 **Breaks** if score doesn't improve vs previous session.
 
 ### Achievement Engine
-25+ achievements across categories:
+34 achievements across categories:
 - **Progression** (5): Cadet, Navigator, Captain, Admiral, Galactic Legend
 - **Excellence** (5): Efficiency Expert, Optimization Master, Cache Champion, etc.
 - **Streaks** (3): 5-session, 10-session, 20-session
 - **Combos** (3): Well-Rounded, Proficiency, Perfectionist
 - **Exploration** (4): 10/50/100/200 sessions
-- **Special** (5): Zero Waste Pioneer, Best Practice Champion, etc.
+- **Special** (9): Zero Waste Pioneer, Concise Communicator, Flawless Execution, Model Maestro, Batch Master, Comeback Kid, Speed Demon, Peak Performance, etc.
 - **Sustainability** (5): Steady Climber, Balanced Optimizer, Rest is Productive, Marathon Mindset, Wisdom Over Grind
 
 ### Regression Detection
@@ -281,7 +281,7 @@ Token-Craft stores data in `~/.claude/` directory:
 
 ```
 ~/.claude/
-├── history.jsonl              # Claude Code usage history (read-only)
+├── history.jsonl              # LLM usage history (Claude Code, Cursor, etc. - read-only)
 ├── stats-cache.json           # Session statistics (read-only)
 └── token-craft/
     ├── user_profile.json      # User state (rank, achievements, streaks)
@@ -297,10 +297,12 @@ Token-Craft stores data in `~/.claude/` directory:
 - **New**: Difficulty scaling by rank (up to 43% harder)
 - **New**: Streak multipliers (1.0x-1.25x) + bonus points
 - **New**: Combo bonuses (+25 to +150 pts)
-- **New**: 30+ achievement system including Sustainability category
+- **New**: 34 achievement system including Sustainability and Best Practices categories
+- **New**: Best practices achievements (Concise Communicator, Flawless Execution, Model Maestro, Batch Master)
 - **New**: Time-based mechanics (recency, decay, seasonal resets)
 - **New**: Regression detection with severity levels
 - **New**: Migration engine for v2.0→v3.0 backwards compatibility
+- **New**: Tool-agnostic architecture (works with Claude Code, Cursor, or any LLM platform)
 - **Philosophy**: Emphasis on sustainable, prudent optimization vs aggressive maximization
 - **Removed**: Duplicate self-sufficiency category
 - **Removed**: Warm-up bonuses (participation trophies)
