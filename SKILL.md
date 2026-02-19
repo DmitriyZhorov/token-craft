@@ -1,21 +1,22 @@
 ---
 name: token-craft
-description: "Gamified LLM token optimization tool that analyzes Claude Code usage patterns. Detects real token waste (repeated context, verbose prompts, redundant reads), calculates scores across 11 categories (1450 points max), provides space-themed ranks from Cadet to Galactic Legend, and gives prescriptive insights with concrete token savings. Includes A/B testing, ROI measurement, and pattern validation. Use when users ask to check token optimization score, find token waste, see their rank, get recommendations to reduce token usage, or invoke /token-craft."
+description: "Gamified LLM token optimization tool that analyzes LLM usage patterns (Claude Code, Cursor, or any AI platform). Detects real token waste (repeated context, verbose prompts, redundant reads), calculates scores across 11 categories (2300 points max), provides space-themed ranks from Cadet to Galactic Legend, and gives prescriptive insights with concrete token savings. Includes A/B testing, ROI measurement, and pattern validation. Use when users ask to check token optimization score, find token waste, see their rank, get recommendations to reduce token usage, or invoke /token-craft."
 ---
 
-# Token-Craft v2.0
+# Token-Craft v3.0
 
 Gamified LLM token optimization tool with real waste detection, A/B testing, and prescriptive insights.
 
 ## What It Does
 
 1. **Waste Detection** - Finds repeated context, verbose prompts, redundant reads, prompt bloat
-2. **11-Category Scoring** - Token efficiency, optimization adoption, self-sufficiency, improvement trend, best practices, cache effectiveness, tool efficiency, session focus, cost efficiency, learning growth, waste awareness (1450 pts max)
-3. **Space Ranks** - Cadet through Galactic Legend based on score
-4. **Prescriptive Insights** - Concrete savings ("Save 2,400 tokens/day") not generic advice
-5. **A/B Testing** - Compares approaches, proves which methods work
-6. **ROI Measurement** - Tracks recommendations from generation to implementation to actual savings
-7. **Pattern Library** - Validates patterns with success rates and evidence
+2. **11-Category Scoring** - Token efficiency (250 pts), optimization adoption (400 pts), improvement trend (125 pts), waste awareness (100 pts), cache effectiveness (75 pts), tool efficiency (75 pts), cost efficiency (75 pts), session focus (75 pts), learning growth (75 pts), best practices (50 pts), plus streak/combo/achievement bonuses (2300 pts max)
+3. **34 Achievements** - 8 categories including Sustainability, Best Practices, and Exploration milestones
+4. **10 Space Ranks** - Exponential progression from Cadet to Galactic Legend
+5. **Prescriptive Insights** - Concrete savings ("Save 2,400 tokens/day") not generic advice
+6. **A/B Testing** - Compares approaches, proves which methods work
+7. **ROI Measurement** - Tracks recommendations from generation to implementation to actual savings
+8. **Pattern Library** - Validates patterns with success rates and evidence
 
 ## Execution
 
@@ -61,14 +62,21 @@ python run_analysis.py "$MODE"
 ## Output Format
 
 ```
-Current Rank: [ICON] [RANK] (score/1450)
+Current Rank: [ICON] [RANK] (score/2300)
 Next Rank: [NAME] in X points
 
 Score Breakdown (11 categories):
-  Token Efficiency:      XXX/300
-  Optimization Adoption: XXX/325
-  ...
+  Token Efficiency:      XXX/250
+  Optimization Adoption: XXX/400
+  Improvement Trend:     XXX/125
+  Cache Effectiveness:   XXX/75
   Waste Awareness:       XXX/100
+  ...
+
+Bonuses & Multipliers:
+  Streak:    1.0x-1.25x multiplier
+  Combo:     +25 to +150 pts
+  Achievements: Unlocked milestones
 
 Token Waste Analysis:
   Total waste: X,XXX tokens
@@ -110,17 +118,20 @@ Strengths: [HIGH CATEGORIES]
 Top opportunity: [LOWEST CATEGORY] - [ACTION] could add [PTS] points.
 ```
 
-## Ranks (v2.0 thresholds)
+## Ranks (v3.0 thresholds - Exponential progression)
 
 | Range | Rank | Icon |
 |-------|------|------|
-| 0-269 | Cadet | graduation cap |
-| 270-539 | Pilot | airplane |
-| 540-809 | Navigator | compass |
-| 810-1079 | Commander | star |
-| 1080-1349 | Captain | pilot |
-| 1350-1619 | Admiral | medal |
-| 1620+ | Galactic Legend | galaxy |
+| 0-99 | Cadet | 🎓 |
+| 100-199 | Navigator | 🧭 |
+| 200-349 | Pilot | 🛩️ |
+| 350-549 | Explorer | 🗺️ |
+| 550-799 | Captain | 👨‍✈️ |
+| 800-1099 | Commander | 🎖️ |
+| 1100-1449 | Admiral | ⚓ |
+| 1450-1849 | Commodore | 🚢 |
+| 1850-2299 | Fleet Admiral | 🏆 |
+| 2300+ | Galactic Legend | 🌌 |
 
 ## Data Sources
 
