@@ -71,7 +71,7 @@ Score Breakdown (11 categories):
   Improvement Trend:     XXX/125
   Cache Effectiveness:   XXX/75
   Waste Awareness:       XXX/100
-  ...
+  ...(more categories)
 
 Bonuses & Multipliers:
   Streak:    1.0x-1.25x multiplier
