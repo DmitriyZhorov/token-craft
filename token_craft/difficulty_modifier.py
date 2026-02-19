@@ -90,6 +90,7 @@ class DifficultyModifier:
             "rank": rank,
             "rank_name": baseline_info["name"],
             "tokens_per_session": baseline_info["tokens_per_session"],
+            "token_efficiency_baseline": baseline_info["tokens_per_session"],  # Alias for compatibility
             "multiplier": baseline_info["multiplier"],
             "cache_hit_target": cls.CACHE_HIT_TARGETS.get(rank, 10),
             "optimization_threshold": cls.OPTIMIZATION_THRESHOLDS.get(rank, 0.30),
@@ -98,7 +99,7 @@ class DifficultyModifier:
 
     @classmethod
     def apply_token_efficiency_difficulty(
-        cls, score: float, user_ratio: float, rank: int
+        cls, base_score: float = None, score: float = None, user_ratio: float = 1.0, rank: int = 1
     ) -> float:
         """
         Apply difficulty-based adjustment to token efficiency score.
@@ -107,28 +108,36 @@ class DifficultyModifier:
         E.g., 1.5x baseline = 200 pts at Cadet, but only 150 pts at Admiral.
 
         Args:
-            score: Current score
+            base_score: Base score (used if user_ratio not provided)
+            score: Current score (deprecated, use base_score)
             user_ratio: User's efficiency ratio (avg_tokens / baseline_tokens)
             rank: Current rank
 
         Returns:
             Adjusted score
         """
+        # Accept both base_score and score for backwards compatibility
+        current_score = base_score or score or 0
+
         # Get rank-specific baseline
         difficulty = cls.get_difficulty(rank)
         multiplier = difficulty["multiplier"]
+
+        # If using simple base_score (no user_ratio provided), apply multiplier
+        if user_ratio == 1.0:
+            return current_score * multiplier
 
         # Higher ranks see tighter scoring bands
         # At Legend (0.57x), the curve is more aggressive
         if user_ratio <= 1.0:
             # Already at or below baseline - no penalty
-            return score
+            return current_score
         elif user_ratio <= 1.5:
             # Slight overage - apply difficulty modifier
-            return score * multiplier
+            return current_score * multiplier
         else:
             # More significant overage - apply stronger modifier
-            return score * (multiplier ** 1.5)
+            return current_score * (multiplier ** 1.5)
 
     @classmethod
     def apply_optimization_difficulty(
