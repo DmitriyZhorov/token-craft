@@ -62,6 +62,17 @@ If pursuing a Token-Craft goal conflicts with shipping quality code, **ship the 
 
 Token-Craft scores are *relative* progress metrics, not absolute optimization targets.
 
+### Tool Compatibility
+
+Token-Craft is designed for **any LLM platform** (Claude Code, Cursor, VS Code extensions, etc.).
+Its philosophy of prudent, sustainable optimization is **independent of your chosen tool's pricing model**.
+
+- **Using Cursor?** Token-Craft helps optimize usage within your Cursor tier
+- **Using Claude Code?** Token-Craft directly integrates with Claude Code history
+- **Using multiple tools?** Track and optimize across all platforms
+
+The key principle: *Better practices matter more than capacity spending.*
+
 ---
 
 - **10 Space Ranks** - Cadet → Galactic Legend (exponential progression)
