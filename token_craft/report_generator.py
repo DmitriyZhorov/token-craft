@@ -9,19 +9,6 @@ from .progress_visualizer import ProgressVisualizer
 from .rank_system import SpaceRankSystem
 from .delta_calculator import DeltaCalculator
 from .cost_alerts import CostAlerts
-from .recommendation_engine import RecommendationEngine
-
-try:
-    from .insights_engine import InsightsEngine
-    _HAS_INSIGHTS = True
-except ImportError:
-    _HAS_INSIGHTS = False
-
-try:
-    from .session_analyzer import SessionAnalyzer
-    _HAS_SESSION_ANALYZER = True
-except ImportError:
-    _HAS_SESSION_ANALYZER = False
 
 
 class ReportGenerator:
@@ -37,8 +24,7 @@ class ReportGenerator:
         profile_data: Dict,
         score_data: Dict,
         rank_data: Dict,
-        delta_data: Optional[Dict] = None,
-        history_data: Optional[List] = None
+        delta_data: Optional[Dict] = None
     ) -> str:
         """
         Generate complete mission report.
@@ -48,7 +34,6 @@ class ReportGenerator:
             score_data: Score breakdown
             rank_data: Current rank info
             delta_data: Delta from previous snapshot (optional)
-            history_data: Parsed history.jsonl data (optional, for insights)
 
         Returns:
             Formatted report string
@@ -83,30 +68,9 @@ class ReportGenerator:
         if cost_summary:
             sections.append(cost_summary)
 
-        # Waste detection (NEW v2.0)
-        waste_section = self._generate_waste_detection_section(score_data)
-        if waste_section:
-            sections.append(waste_section)
-
-        # Prescriptive insights (NEW v2.0)
-        insights_section = self._generate_prescriptive_insights_section(score_data, history_data)
-        if insights_section:
-            sections.append(insights_section)
-
         # Top recommendations
-        recommendations = self._generate_recommendations(score_data, profile_data, history_data)
+        recommendations = self._generate_recommendations(score_data, profile_data)
         sections.append(recommendations)
-
-        # Structural efficiency analysis (from /insights data)
-        if _HAS_SESSION_ANALYZER:
-            try:
-                analyzer = SessionAnalyzer()
-                session_results = analyzer.analyze_all()
-                session_section = analyzer.format_report_section(session_results)
-                if session_section:
-                    sections.append(session_section)
-            except Exception:
-                pass
 
         # Achievements
         if profile_data.get("achievements"):
@@ -178,63 +142,24 @@ class ReportGenerator:
         lines.append("")
         return "\n".join(lines)
 
-    def _generate_recommendations(self, score_data: Dict, profile_data: Dict,
-                                    history_data: Optional[List] = None) -> str:
-        """Generate personalized recommendations using RecommendationEngine."""
+    def _generate_recommendations(self, score_data: Dict, profile_data: Dict) -> str:
+        """Generate personalized recommendations."""
         lines = []
         lines.append("Top Optimization Opportunities:")
         lines.append("=" * 70)
+        lines.append("")
 
-        try:
-            recommendations = RecommendationEngine.generate_recommendations(
-                score_data, profile_data, history_data
+        recommendations = self._identify_recommendations(score_data, profile_data)
+
+        for i, rec in enumerate(recommendations[:3], 1):
+            box = self.visualizer.create_recommendation_box(
+                rec["title"],
+                rec["description"],
+                rec["impact"]
             )
-
-            if not recommendations:
-                recommendations = self._identify_recommendations(score_data, profile_data)
-                # Fall back to old-style box format
-                for i, rec in enumerate(recommendations[:3], 1):
-                    box = self.visualizer.create_recommendation_box(
-                        rec["title"], rec["description"], rec["impact"]
-                    )
-                    lines.append(box)
-                    if i < len(recommendations[:3]):
-                        lines.append("")
-                return "\n".join(lines)
-
-            # Format using RecommendationEngine's prescriptive style
-            for i, rec in enumerate(recommendations[:5], 1):
-                formatted = RecommendationEngine.format_recommendation(rec, i)
-                lines.append(formatted)
-
-            # Next Rank Path section
-            next_rank = SpaceRankSystem.get_next_rank(score_data["total_score"])
-            if next_rank and recommendations:
-                path_recs = RecommendationEngine.get_next_rank_recommendations(
-                    int(score_data["total_score"]),
-                    next_rank["min"],
-                    recommendations
-                )
-                total_potential = RecommendationEngine.calculate_total_potential(path_recs)
-
+            lines.append(box)
+            if i < len(recommendations[:3]):
                 lines.append("")
-                lines.append(f"Path to {next_rank['name']} ({next_rank['points_needed']} pts needed):")
-                lines.append("-" * 70)
-                for rec in path_recs:
-                    pts = rec.get("potential_points", 0)
-                    lines.append(f"  + {rec['title']}: ~{pts} pts")
-                lines.append(f"  Total potential: ~{total_potential} pts")
-
-        except Exception:
-            # Fallback to old-style recommendations
-            recommendations = self._identify_recommendations(score_data, profile_data)
-            for i, rec in enumerate(recommendations[:3], 1):
-                box = self.visualizer.create_recommendation_box(
-                    rec["title"], rec["description"], rec["impact"]
-                )
-                lines.append(box)
-                if i < len(recommendations[:3]):
-                    lines.append("")
 
         return "\n".join(lines)
 
@@ -319,123 +244,6 @@ class ReportGenerator:
         lines.append("")
 
         return "\n".join(lines)
-
-    def _generate_waste_detection_section(self, score_data: Dict) -> str:
-        """
-        Generate waste detection section showing actual token waste patterns.
-
-        Args:
-            score_data: Score breakdown with waste_awareness data
-
-        Returns:
-            Formatted waste detection section (or empty string if no waste data)
-        """
-        breakdown = score_data.get("breakdown", {})
-        waste_data = breakdown.get("waste_awareness", {})
-
-        if not waste_data or waste_data.get("total_waste_tokens", 0) == 0:
-            return ""  # No waste detected
-
-        lines = []
-        lines.append("Token Waste Analysis:")
-        lines.append("=" * 70)
-        lines.append("")
-
-        total_waste = waste_data.get("total_waste_tokens", 0)
-        daily_waste = waste_data.get("daily_waste_rate", 0)
-        patterns = waste_data.get("waste_patterns", {})
-
-        # Summary
-        lines.append(f"Total waste detected: {total_waste:,} tokens")
-        lines.append(f"Daily waste rate: ~{daily_waste:,.0f} tokens/day")
-        lines.append("")
-
-        if patterns:
-            lines.append("Waste Patterns Found:")
-            lines.append("-" * 70)
-            lines.append("")
-
-            # Priority order
-            priority_order = ['repeated_context', 'verbose_prompts', 'redundant_file_reads', 'prompt_bloat']
-
-            for pattern_type in priority_order:
-                if pattern_type not in patterns:
-                    continue
-
-                pattern = patterns[pattern_type]
-                waste_tokens = pattern.get('waste_tokens', 0)
-
-                if waste_tokens == 0:
-                    continue
-
-                # Pattern header
-                pattern_names = {
-                    'repeated_context': 'REPEATED CONTEXT',
-                    'verbose_prompts': 'VERBOSE PROMPTS',
-                    'redundant_file_reads': 'REDUNDANT FILE READS',
-                    'prompt_bloat': 'PROMPT BLOAT'
-                }
-                lines.append(f"  {pattern_names.get(pattern_type, pattern_type.upper())}")
-                lines.append(f"  Waste: {waste_tokens:,} tokens")
-
-                # Examples
-                examples = pattern.get('examples', [])
-                if examples and len(examples) > 0:
-                    lines.append("  Examples:")
-                    for example in examples[:2]:  # Show max 2 examples
-                        if isinstance(example, dict):
-                            # Verbose prompts format
-                            verbose = example.get('verbose', '')
-                            waste = example.get('waste_tokens', 0)
-                            lines.append(f"    • {verbose} (wasted {waste} tokens)")
-                        elif isinstance(example, str):
-                            # String format
-                            lines.append(f"    • {example}")
-
-                # Recommendation
-                recommendation = pattern.get('recommendation', '')
-                if recommendation:
-                    lines.append(f"  Fix: {recommendation}")
-
-                lines.append("")
-
-        # Overall recommendation
-        if total_waste > 30000:
-            priority = "HIGH PRIORITY"
-        elif total_waste > 10000:
-            priority = "MEDIUM PRIORITY"
-        else:
-            priority = "LOW PRIORITY"
-
-        lines.append(f"Priority: {priority}")
-        lines.append("")
-
-        return "\n".join(lines)
-
-    def _generate_prescriptive_insights_section(self, score_data: Dict,
-                                                  history_data: Optional[List] = None) -> str:
-        """
-        Generate prescriptive insights section.
-
-        Args:
-            score_data: Score breakdown
-            history_data: Parsed history.jsonl data
-
-        Returns:
-            Formatted insights section (or empty string if no insights engine)
-        """
-        if not _HAS_INSIGHTS or not history_data:
-            return ""
-
-        try:
-            engine = InsightsEngine(score_data, history_data)
-            insights = engine.generate_insights()
-            if insights:
-                return engine.format_insights_section(insights)
-        except Exception:
-            pass
-
-        return ""
 
     def _generate_achievements_section(self, achievements: List[Dict]) -> str:
         """Generate achievements section."""

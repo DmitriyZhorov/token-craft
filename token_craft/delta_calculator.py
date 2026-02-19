@@ -49,8 +49,8 @@ class DeltaCalculator:
         current_breakdown = current.get("scores", {}).get("breakdown", {})
         previous_breakdown = previous.get("scores", {}).get("breakdown", {})
 
-        all_categories = set(current_breakdown.keys()) | set(previous_breakdown.keys())
-        for category in sorted(all_categories):
+        for category in ["token_efficiency", "optimization_adoption", "self_sufficiency",
+                        "improvement_trend", "best_practices"]:
             current_cat_score = current_breakdown.get(category, {}).get("score", 0)
             previous_cat_score = previous_breakdown.get(category, {}).get("score", 0)
             change = current_cat_score - previous_cat_score

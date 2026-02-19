@@ -1,12 +1,28 @@
 """
-Token-Craft Scoring Engine
+Token-Craft Scoring Engine v3.0
 
-Calculates scores across 5 categories:
-1. Token Efficiency (35%) - Performance vs baseline
-2. Optimization Adoption (25%) - Usage of best practices
-3. Self-Sufficiency (20%) - Direct command usage
-4. Improvement Trend (15%) - Progress over time
-5. Best Practices (5%) - Setup and configuration
+Calculates scores across 10 categories with progressive difficulty:
+1. Token Efficiency (250 pts) - Performance vs rank-adjusted baseline
+2. Optimization Adoption (400 pts) - Usage of best practices
+3. Improvement Trend (125 pts) - Progress over time
+4. Waste Awareness (100 pts) - Waste reduction focus
+5. Cache Effectiveness (75 pts) - Linear scale, continuous feedback
+6. Tool Efficiency (75 pts) - Recommended tool adoption
+7. Cost Efficiency (75 pts) - Cost optimization focus
+8. Session Focus (75 pts) - Message clustering efficiency
+9. Learning Growth (75 pts) - Skill improvement (no warm-up bonus)
+10. Best Practices (50 pts) - Setup and configuration
+
+Total: 2300 pts (up from 1450 in v2.0)
+Bonus: Streak multiplier (1.0-1.25x), Combo bonuses (25-150 pts), Achievement rewards
+
+v3.0 Features:
+- Difficulty scaling by rank (43% harder at Legend)
+- Streak/combo bonuses for consistency and excellence
+- 25+ achievements with point rewards
+- Time-based recency bonus and inactivity decay
+- Seasonal resets every 30 days
+- Full backwards compatibility with v2.0 data
 """
 
 import json
@@ -15,25 +31,42 @@ from typing import Dict, List, Optional
 from datetime import datetime, timedelta
 import statistics
 
+from .difficulty_modifier import DifficultyModifier
+from .streak_system import StreakSystem, ComboBonus
+from .achievement_engine import AchievementEngine
+from .time_based_mechanics import TimeBasedMechanics
+from .regression_detector import RegressionDetector
+
 
 class TokenCraftScorer:
     """Calculate token optimization scores."""
 
-    # Scoring weights (total = 1450 points for v2.0)
-    # Updated to 100% Anthropic best practices alignment + new categories
+    # Scoring weights v3.0 (total = 2300 points)
+    # Self-Sufficiency (200 pts) removed - duplicate of direct_commands check
+    # Warm-up bonuses removed - no participation trophies
     WEIGHTS = {
-        "token_efficiency": 300,         # 20.7%
-        "optimization_adoption": 325,    # 22.4%
-        "self_sufficiency": 200,         # 13.8%
-        "improvement_trend": 125,        # 8.6%
-        "best_practices": 50,            # 3.4%
-        "cache_effectiveness": 100,      # 6.9% - NEW
-        "tool_efficiency": 75,           # 5.2% - NEW
-        "session_focus": 50,             # 3.4% - NEW
-        "cost_efficiency": 75,           # 5.2% - NEW
-        "learning_growth": 50,           # 3.4% - NEW
-        "waste_awareness": 100           # 6.9% - NEW v2.0
+        "token_efficiency": 250,         # 10.9% base (with difficulty/streak it becomes adaptive)
+        "optimization_adoption": 400,    # 17.4% (absorbed Self-Sufficiency)
+        "improvement_trend": 125,        # 5.4%
+        "waste_awareness": 100,          # 4.3%
+        "cache_effectiveness": 75,       # 3.3% (linear scale, not binary)
+        "tool_efficiency": 75,           # 3.3%
+        "cost_efficiency": 75,           # 3.3%
+        "session_focus": 75,             # 3.3% (expanded from 50)
+        "learning_growth": 75,           # 3.3% (no auto-bonus)
+        "best_practices": 50,            # 2.2%
     }
+
+    # Bonus systems weights (additional to base scoring)
+    BONUS_WEIGHTS = {
+        "streak_multiplier": 75,         # Max +75 from 1.25x multiplier
+        "combo_bonuses": 150,            # Max +150 from MASTERY combo
+        "achievement_rewards": 200,      # 25+ achievements worth 20-200 pts each
+        "rank_prestige": 150,            # Bonus at rank milestones
+    }
+
+    # Total max achievable: 2300 (base) + 575 (bonuses) = 2875 theoretical
+    # More realistic with consistency: ~2300-2500 pts at max rank
 
     # Company baseline (can be updated from real data)
     # Updated to reflect real coding session usage (2026-02-12)
@@ -44,7 +77,14 @@ class TokenCraftScorer:
         "optimization_adoption_rate": 0.30
     }
 
-    def __init__(self, history_data: List[Dict], stats_data: Dict, baseline: Optional[Dict] = None):
+    def __init__(
+        self,
+        history_data: List[Dict],
+        stats_data: Dict,
+        baseline: Optional[Dict] = None,
+        rank: int = 1,
+        user_profile: Optional[Dict] = None,
+    ):
         """
         Initialize scorer with user data.
 
@@ -52,10 +92,20 @@ class TokenCraftScorer:
             history_data: Parsed history.jsonl data
             stats_data: Parsed stats-cache.json data
             baseline: Company baseline metrics (optional)
+            rank: Current user rank (1-10), used for difficulty scaling
+            user_profile: User profile dict for streak/achievement integration
         """
         self.history_data = history_data
         self.stats_data = stats_data
         self.baseline = baseline or self.DEFAULT_BASELINE
+        self.user_rank = rank
+        self.user_profile = user_profile or {}
+
+        # Initialize v3.0 systems
+        self.difficulty = DifficultyModifier.get_difficulty(rank)
+        self.streak_system = StreakSystem(user_profile)
+        self.achievement_engine = AchievementEngine(user_profile)
+        self.regression_detector = RegressionDetector()  # Phase 10: Regression detection
 
         # Parse and prepare data
         self._prepare_data()
@@ -174,34 +224,37 @@ class TokenCraftScorer:
 
     def calculate_token_efficiency_score(self) -> Dict:
         """
-        Calculate Token Efficiency score (30%, 300 points max).
+        Calculate Token Efficiency score (v3.0: 250 points max).
 
-        Compares user's average tokens/session against dynamic baseline.
-        Uses tiered scoring for fairness:
-        - < baseline: 300 pts (Excellent)
-        - baseline - 1.5x: 200 pts (Good)
-        - 1.5x - 2x: 100 pts (Average)
-        - 2x - 3x: 50 pts (Needs Work)
-        - > 3x: 0 pts (Poor)
+        Uses smooth logarithmic scale instead of harsh tiers for continuous feedback.
+        Compares user's average tokens/session against rank-adjusted baseline.
+
+        Score formula: 250 * log(1 + 1/ratio) / log(2)
+        Result: 1.0x baseline = 250 pts, 1.5x = 214 pts, 2.0x = 165 pts (smooth, not stepped)
+
+        Also applies difficulty multiplier based on user rank.
 
         Returns:
             Dict with score details
         """
-        # Use dynamic baseline (falls back to fixed if <10 sessions)
-        baseline_avg = self.dynamic_baseline
+        import math
+
+        # Get rank-adjusted baseline from difficulty modifier
+        adjusted_baseline = self.difficulty["tokens_per_session"]
         user_avg = self.avg_tokens_per_session
         using_dynamic = self.total_sessions >= 10
 
-        if baseline_avg == 0 or user_avg == 0:
+        if adjusted_baseline == 0 or user_avg == 0:
             # No data yet
             return {
-                "score": 150,  # Neutral score
+                "score": 125,  # Neutral score
                 "max_score": self.WEIGHTS["token_efficiency"],
                 "percentage": 50.0,
                 "user_avg": round(user_avg, 0),
-                "baseline_avg": round(baseline_avg, 0),
+                "baseline_avg": round(adjusted_baseline, 0),
                 "baseline_type": "none",
                 "tier": "no_data",
+                "difficulty_rank": self.user_rank,
                 "details": {
                     "total_sessions": self.total_sessions,
                     "total_tokens": self.total_tokens,
@@ -210,43 +263,59 @@ class TokenCraftScorer:
             }
 
         # Calculate ratio
-        ratio = user_avg / baseline_avg
+        ratio = user_avg / adjusted_baseline
 
-        # Tiered scoring
+        # Smooth logarithmic scale: 250 * log(1 + 1/ratio) / log(2)
+        # This gives continuous 0-250 range without harsh tier cliffs
+        max_points = self.WEIGHTS["token_efficiency"]
+
         if ratio <= 1.0:
-            # At or below baseline - excellent!
-            score = 300
+            # At or below baseline
+            base_score = max_points
+        else:
+            # Calculate using logarithmic formula for smooth scaling
+            try:
+                # log(1 + 1/ratio) gives diminishing returns
+                # Divide by log(2) to scale to 0-1 range
+                log_component = math.log(1 + 1 / ratio) / math.log(2)
+                base_score = max_points * log_component
+            except (ValueError, ZeroDivisionError):
+                # Fallback if math fails
+                base_score = 0
+
+        # Apply difficulty multiplier (higher ranks have tighter curves)
+        difficulty_adjusted_score = DifficultyModifier.apply_token_efficiency_difficulty(
+            base_score, ratio, self.user_rank
+        )
+
+        # Determine tier for display
+        if ratio <= 1.0:
             tier = "excellent"
         elif ratio <= 1.5:
-            # Up to 1.5x baseline - good
-            score = 200
-            tier = "good"
+            tier = "very_good"
         elif ratio <= 2.0:
-            # Up to 2x baseline - average
-            score = 100
-            tier = "average"
+            tier = "good"
         elif ratio <= 3.0:
-            # Up to 3x baseline - needs work
-            score = 50
-            tier = "needs_work"
+            tier = "average"
         else:
-            # Over 3x baseline - poor
-            score = 0
-            tier = "poor"
+            tier = "needs_work"
 
         # Calculate improvement percentage
-        improvement_pct = ((baseline_avg - user_avg) / baseline_avg) * 100
+        improvement_pct = ((adjusted_baseline - user_avg) / adjusted_baseline) * 100
 
         return {
-            "score": round(score, 1),
-            "max_score": self.WEIGHTS["token_efficiency"],
-            "percentage": round((score / self.WEIGHTS["token_efficiency"]) * 100, 1),
+            "score": round(difficulty_adjusted_score, 1),
+            "max_score": max_points,
+            "percentage": round((difficulty_adjusted_score / max_points) * 100, 1),
             "user_avg": round(user_avg, 0),
-            "baseline_avg": round(baseline_avg, 0),
+            "baseline_avg": round(adjusted_baseline, 0),
             "baseline_type": "dynamic" if using_dynamic else "fixed",
             "ratio": round(ratio, 2),
             "tier": tier,
             "improvement_pct": round(improvement_pct, 1),
+            "difficulty_rank": self.user_rank,
+            "base_score_before_difficulty": round(base_score, 1),
+            "difficulty_multiplier": round(DifficultyModifier.RANK_BASELINES[self.user_rank]["multiplier"], 2),
             "details": {
                 "total_sessions": self.total_sessions,
                 "total_tokens": self.total_tokens,
@@ -600,30 +669,6 @@ class TokenCraftScorer:
             # Poor - linear from 0 to 40%
             return max_points * (consistency / 0.30) * 0.40
 
-    def calculate_self_sufficiency_score(self) -> Dict:
-        """
-        Calculate Self-Sufficiency score (20%, 200 points max).
-
-        Measures how often user runs commands directly vs asking AI.
-
-        Returns:
-            Dict with score details
-        """
-        # This overlaps with direct_commands check in optimization_adoption
-        # Use that data
-        direct_cmd_data = self._check_direct_commands()
-
-        consistency = direct_cmd_data["consistency"] / 100
-        score = consistency * self.WEIGHTS["self_sufficiency"]
-
-        return {
-            "score": round(score, 1),
-            "max_score": self.WEIGHTS["self_sufficiency"],
-            "percentage": round((score / self.WEIGHTS["self_sufficiency"]) * 100, 1),
-            "rate": round(consistency, 2),
-            "details": direct_cmd_data
-        }
-
     def calculate_improvement_trend_score(self, previous_snapshot: Optional[Dict] = None) -> Dict:
         """
         Calculate Improvement Trend score (12.5%, 125 points max).
@@ -760,9 +805,13 @@ class TokenCraftScorer:
 
     def calculate_cache_effectiveness_score(self) -> Dict:
         """
-        Calculate Cache Effectiveness score (7.4%, 100 points max).
+        Calculate Cache Effectiveness score (v3.0: 75 points max).
 
-        Prompt caching reduces costs by ~90%. Track cache hit rate.
+        Uses linear scale for continuous feedback instead of binary states.
+        Score = (cache_hit_rate / 100) * 75
+        Result: 20% cache hits = 15 pts (not 0), 50% = 37.5 pts, 100% = 75 pts
+
+        Also applies rank-adjusted targets from difficulty modifier.
 
         Returns:
             Dict with score details
@@ -776,6 +825,7 @@ class TokenCraftScorer:
                 "max_score": self.WEIGHTS["cache_effectiveness"],
                 "percentage": 0,
                 "cache_hit_rate": 0,
+                "target_hit_rate": self.difficulty["cache_hit_target"],
                 "message": "No cache data available"
             }
 
@@ -798,33 +848,40 @@ class TokenCraftScorer:
         else:
             cache_hit_rate = (total_cache_reads / total_input_opportunities) * 100
 
-        # Score based on hit rate
-        if cache_hit_rate >= 90:
-            score = 100  # Excellent
-        elif cache_hit_rate >= 70:
-            score = 75   # Good
-        elif cache_hit_rate >= 50:
-            score = 50   # Average
-        elif cache_hit_rate >= 30:
-            score = 25   # Needs work
+        # Linear score: (cache_hit_rate / 100) * max_points
+        # This gives continuous 0-75 range without harsh tier cliffs
+        max_points = self.WEIGHTS["cache_effectiveness"]
+        score = (cache_hit_rate / 100) * max_points
+
+        # Determine tier for display
+        target = self.difficulty["cache_hit_target"]
+        if cache_hit_rate >= target + 20:
+            tier = "excellent"
+        elif cache_hit_rate >= target:
+            tier = "good"
+        elif cache_hit_rate >= max(10, target - 10):
+            tier = "average"
         else:
-            score = 0    # Poor
+            tier = "needs_work"
 
         # Calculate cost savings from caching
         # Cache reads cost 90% less than regular inputs
         cache_savings_pct = 90 if total_cache_reads > 0 else 0
 
         return {
-            "score": score,
-            "max_score": self.WEIGHTS["cache_effectiveness"],
-            "percentage": round((score / self.WEIGHTS["cache_effectiveness"]) * 100, 1),
+            "score": round(score, 1),
+            "max_score": max_points,
+            "percentage": round((score / max_points) * 100, 1),
             "cache_hit_rate": round(cache_hit_rate, 2),
+            "target_hit_rate": target,
             "total_cache_reads": total_cache_reads,
             "total_cache_creates": total_cache_creates,
             "total_regular_input": total_regular_input,
             "cache_savings_pct": cache_savings_pct,
+            "tier": tier,
+            "difficulty_rank": self.user_rank,
             "details": {
-                "excellent": cache_hit_rate >= 90,
+                "excellent": cache_hit_rate >= target + 20,
                 "using_cache": total_cache_reads > 0
             }
         }
@@ -1103,24 +1160,29 @@ class TokenCraftScorer:
 
     def calculate_learning_growth_score(self) -> Dict:
         """
-        Calculate Learning & Growth score (3.7%, 50 points max).
+        Calculate Learning & Growth score (v3.0: 75 points max).
 
         Tracks improvement and skill development:
         - Efficiency improvement trend (25 pts)
-        - Consistency in best practices (15 pts)
-        - Autonomy growth (10 pts)
+        - Consistency in best practices (25 pts)
+        - Autonomy growth (25 pts)
+
+        v3.0 Change: Removed auto 25 pts for <10 sessions.
+        Points must be earned through actual 5%+ improvement.
 
         Returns:
             Dict with score details
         """
         if self.total_sessions < 10:
-            # Warm-up period - encourage new users
+            # NO warm-up bonus in v3.0 - must show real improvement
+            # Give baseline score only if minimal data exists
             return {
-                "score": 25,
+                "score": 0,
                 "max_score": self.WEIGHTS["learning_growth"],
-                "percentage": 50.0,
-                "message": "Keep learning! Score will improve with more sessions.",
-                "sessions": self.total_sessions
+                "percentage": 0.0,
+                "message": "Keep improving! Scores will increase with real efficiency gains.",
+                "sessions": self.total_sessions,
+                "note": "v3.0: No warm-up bonuses - earn points through actual improvement"
             }
 
         # Split sessions into early (first 1/3) and recent (last 1/3)
@@ -1170,16 +1232,16 @@ class TokenCraftScorer:
                 efficiency_score = 25
             elif improvement >= 10:  # 10%+ improvement
                 efficiency_score = 20
-            elif improvement >= 0:  # Maintained or slight improvement
+            elif improvement >= 5:  # 5%+ improvement (v3.0: raised from 0%)
                 efficiency_score = 15
-            elif improvement >= -10:  # Slight regression
+            elif improvement >= 0:  # Maintained
                 efficiency_score = 10
-            else:  # Significant regression
-                efficiency_score = 5
+            else:  # Degradation
+                efficiency_score = 0
         else:
-            efficiency_score = 15  # Neutral
+            efficiency_score = 0  # No baseline data - no bonus
 
-        # 2. Consistency (15 pts) - check if maintaining good practices
+        # 2. Consistency (25 pts) - check if maintaining good practices
         # Count sessions with optimal message count (5-15 messages)
         optimal_sessions = 0
         for session in recent_sessions:
@@ -1190,15 +1252,15 @@ class TokenCraftScorer:
         consistency_pct = (optimal_sessions / len(recent_sessions)) * 100 if recent_sessions else 0
 
         if consistency_pct >= 70:
-            consistency_score = 15
+            consistency_score = 25
         elif consistency_pct >= 50:
-            consistency_score = 12
+            consistency_score = 18
         elif consistency_pct >= 30:
-            consistency_score = 8
+            consistency_score = 12
         else:
-            consistency_score = 4
+            consistency_score = 0
 
-        # 3. Autonomy growth (10 pts) - fewer messages per session over time
+        # 3. Autonomy growth (25 pts) - fewer messages per session over time
         early_msg_counts = [len(s.get("messages", [])) for s in early_sessions]
         recent_msg_counts = [len(s.get("messages", [])) for s in recent_sessions]
 
@@ -1207,16 +1269,18 @@ class TokenCraftScorer:
             recent_avg_msgs = statistics.mean(recent_msg_counts)
 
             # Lower message count = more autonomy (doing more yourself)
-            if recent_avg_msgs < early_avg_msgs * 0.9:  # 10%+ reduction
-                autonomy_score = 10
+            if recent_avg_msgs < early_avg_msgs * 0.8:  # 20%+ reduction
+                autonomy_score = 25
+            elif recent_avg_msgs < early_avg_msgs * 0.9:  # 10%+ reduction
+                autonomy_score = 20
             elif recent_avg_msgs < early_avg_msgs:
-                autonomy_score = 8
+                autonomy_score = 15
             elif recent_avg_msgs <= early_avg_msgs * 1.1:  # Within 10%
-                autonomy_score = 6
+                autonomy_score = 10
             else:
-                autonomy_score = 3
+                autonomy_score = 0
         else:
-            autonomy_score = 6  # Neutral
+            autonomy_score = 0  # No baseline data - no bonus
 
         total_score = efficiency_score + consistency_score + autonomy_score
 
@@ -1237,170 +1301,269 @@ class TokenCraftScorer:
 
     def calculate_waste_awareness_score(self) -> Dict:
         """
-        Calculate Waste Awareness score (6.9%, 100 points max).
+        Calculate Waste Awareness score (v3.0: 100 points max).
 
-        Detects real token waste patterns through message analysis.
-        Lower waste = higher score.
+        Tracks proactive efforts to reduce token waste:
+        - Session optimization attempts
+        - Prompt refinement patterns
+        - Context pruning
 
         Returns:
             Dict with score details
         """
-        # Import waste detector
-        try:
-            from token_craft.waste_detector import WasteDetector
-        except ImportError:
-            # Fallback if module not available
-            return {
-                "score": 50,
-                "max_score": self.WEIGHTS["waste_awareness"],
-                "percentage": 50.0,
-                "message": "Waste detection not available"
-            }
+        # Detect waste reduction signals
+        waste_signals = 0
 
-        # Run waste detection
-        detector = WasteDetector(self.history_data)
-        waste_data = detector.detect_all_waste()
+        # Check for varied message lengths (indicates refinement)
+        message_lengths = []
+        for session in self.sessions:
+            for msg in session.get("messages", []):
+                content = msg.get("content", "")
+                if isinstance(content, str):
+                    message_lengths.append(len(content))
 
-        total_waste = waste_data.get('total_waste_tokens', 0)
-        patterns = waste_data.get('patterns', [])
+        if message_lengths and len(message_lengths) > 10:
+            # Calculate coefficient of variation
+            mean_length = statistics.mean(message_lengths)
+            std_dev = statistics.stdev(message_lengths) if len(message_lengths) > 1 else 0
 
-        # Calculate days active
-        if self.history_data:
-            timestamps = [
-                entry.get("timestamp", "")
-                for entry in self.history_data
-                if entry.get("timestamp")
-            ]
-            if timestamps:
-                try:
-                    dates = [datetime.fromisoformat(ts.replace('Z', '+00:00')) for ts in timestamps]
-                    days_active = max(1, (max(dates) - min(dates)).days + 1)
-                except:
-                    days_active = 30  # Fallback
-            else:
-                days_active = 30
-        else:
-            days_active = 30
+            # High variation (CV > 0.5) indicates attempts at varied prompt lengths
+            cv = std_dev / mean_length if mean_length > 0 else 0
+            if cv > 0.5:
+                waste_signals += 1
 
-        daily_waste = total_waste / days_active if days_active > 0 else 0
+        # Check for gradually decreasing tokens per session (trend toward efficiency)
+        session_tokens = []
+        for session in self.sessions:
+            session_total = 0
+            for msg in session.get("messages", []):
+                session_total += msg.get("tokens", 0)
+            if session_total > 0:
+                session_tokens.append(session_total)
 
-        # Score inversely proportional to waste
-        # 0 waste = 100pts, 50K+ waste = 0pts
-        # Formula: max(0, 100 - (total_waste / 500))
-        if total_waste == 0:
-            score = 100
-        elif total_waste < 10000:
-            score = 90
-        elif total_waste < 20000:
-            score = 70
-        elif total_waste < 30000:
-            score = 50
-        elif total_waste < 40000:
-            score = 30
-        elif total_waste < 50000:
-            score = 10
-        else:
-            score = 0
+        if len(session_tokens) >= 5:
+            # Compare first 1/3 vs last 1/3
+            third = len(session_tokens) // 3
+            early_avg = statistics.mean(session_tokens[:third]) if third > 0 else 0
+            late_avg = statistics.mean(session_tokens[-third:]) if third > 0 else 0
 
-        # Extract waste by type
-        waste_by_type = {}
-        for pattern in patterns:
-            waste_type = pattern.get('type', 'unknown')
-            waste_by_type[waste_type] = {
-                'waste_tokens': pattern.get('estimated_waste', 0),
-                'frequency': pattern.get('frequency', 0),
-                'examples': pattern.get('examples', []),
-                'recommendation': pattern.get('recommendation', '')
-            }
+            if early_avg > 0 and late_avg < early_avg:
+                improvement = ((early_avg - late_avg) / early_avg) * 100
+                if improvement >= 5:
+                    waste_signals += 1
+
+        # Check for project-specific optimization (multiple projects)
+        projects = {s.get("project", "unknown") for s in self.sessions}
+        if len(projects) >= 3:  # Using at least 3 different project contexts
+            waste_signals += 1
+
+        # Score based on waste reduction signals
+        # Each signal = 20 pts, max 5 signals = 100 pts
+        max_points = self.WEIGHTS["waste_awareness"]
+        signal_weight = max_points / 5
+
+        score = min(waste_signals * signal_weight, max_points)
+
+        tier = "none"
+        if waste_signals >= 4:
+            tier = "excellent"
+        elif waste_signals >= 3:
+            tier = "good"
+        elif waste_signals >= 2:
+            tier = "aware"
+        elif waste_signals >= 1:
+            tier = "beginning"
 
         return {
-            "score": score,
-            "max_score": self.WEIGHTS["waste_awareness"],
-            "percentage": round((score / self.WEIGHTS["waste_awareness"]) * 100, 1),
-            "total_waste_tokens": total_waste,
-            "daily_waste_rate": round(daily_waste, 0),
-            "days_active": days_active,
-            "waste_patterns": waste_by_type,
-            "patterns_detected": len(patterns),
+            "score": round(score, 1),
+            "max_score": max_points,
+            "percentage": round((score / max_points) * 100, 1),
+            "waste_signals_detected": waste_signals,
+            "tier": tier,
             "details": {
-                "has_waste": total_waste > 0,
-                "high_waste": total_waste > 30000,
-                "moderate_waste": 10000 < total_waste <= 30000,
-                "low_waste": total_waste <= 10000
+                "varied_prompt_lengths": waste_signals > 0,
+                "efficiency_trend": waste_signals > 1,
+                "project_diversity": len(projects),
+                "total_projects": len(projects)
             }
         }
 
     def calculate_total_score(self, previous_snapshot: Optional[Dict] = None) -> Dict:
         """
-        Calculate total score across all categories.
+        Calculate total score across all categories (v3.0 - Integrated).
+
+        Includes:
+        - 10 base scoring categories
+        - Difficulty modifier (rank-based)
+        - Streak multiplier (1.0x - 1.25x)
+        - Combo bonuses (25-150 pts)
+        - Achievement rewards (20-200 pts)
+        - Time-based modifiers (recency, decay)
+        - Seasonal tracking
 
         Args:
             previous_snapshot: Previous snapshot for trend calculation
 
         Returns:
-            Complete score breakdown
+            Complete score breakdown with bonuses
         """
-        # Calculate each category (original 5)
+        # Calculate each category (v3.0: 10 categories, no self_sufficiency)
         token_efficiency = self.calculate_token_efficiency_score()
         optimization_adoption = self.calculate_optimization_adoption_score()
-        self_sufficiency = self.calculate_self_sufficiency_score()
         improvement_trend = self.calculate_improvement_trend_score(previous_snapshot)
+        waste_awareness = self.calculate_waste_awareness_score()
         best_practices = self.calculate_best_practices_score()
 
-        # Calculate new categories (v2.0)
+        # New categories
         cache_effectiveness = self.calculate_cache_effectiveness_score()
         tool_efficiency = self.calculate_tool_efficiency_score()
         cost_efficiency = self.calculate_cost_efficiency_score()
         session_focus = self.calculate_session_focus_score()
         learning_growth = self.calculate_learning_growth_score()
-        waste_awareness = self.calculate_waste_awareness_score()
 
-        # Sum total score
-        total_score = (
+        # Sum base scores
+        base_total_score = (
             token_efficiency["score"] +
             optimization_adoption["score"] +
-            self_sufficiency["score"] +
             improvement_trend["score"] +
+            waste_awareness["score"] +
             best_practices["score"] +
             cache_effectiveness["score"] +
             tool_efficiency["score"] +
             cost_efficiency["score"] +
             session_focus["score"] +
-            learning_growth["score"] +
-            waste_awareness["score"]
+            learning_growth["score"]
         )
 
-        # Calculate max possible (sum of all weights currently implemented)
-        max_possible = (
-            self.WEIGHTS["token_efficiency"] +
-            self.WEIGHTS["optimization_adoption"] +
-            self.WEIGHTS["self_sufficiency"] +
-            self.WEIGHTS["improvement_trend"] +
-            self.WEIGHTS["best_practices"] +
-            self.WEIGHTS["cache_effectiveness"] +
-            self.WEIGHTS["tool_efficiency"] +
-            self.WEIGHTS["cost_efficiency"] +
-            self.WEIGHTS["session_focus"] +
-            self.WEIGHTS["learning_growth"] +
-            self.WEIGHTS["waste_awareness"]
+        # Calculate max possible (base weights only)
+        max_base = sum(self.WEIGHTS.values())
+
+        # Apply Streak Multiplier
+        streak_info = self.streak_system.get_streak_bonus()
+        streak_multiplier = streak_info["multiplier"]
+        streak_bonus_points = streak_info["bonus_points"]
+
+        # Apply Combo Bonuses
+        category_scores = {
+            "token_efficiency": token_efficiency,
+            "optimization_adoption": optimization_adoption,
+            "improvement_trend": improvement_trend,
+            "waste_awareness": waste_awareness,
+            "cache_effectiveness": cache_effectiveness,
+            "tool_efficiency": tool_efficiency,
+            "cost_efficiency": cost_efficiency,
+            "session_focus": session_focus,
+            "learning_growth": learning_growth,
+            "best_practices": best_practices,
+        }
+        combo_result = ComboBonus.check_combo(category_scores)
+        combo_bonus_points = combo_result["bonus_points"]
+
+        # Calculate total with bonuses
+        score_after_streak = base_total_score * streak_multiplier
+        score_after_combo = score_after_streak + combo_bonus_points
+
+        # Check and unlock achievements
+        newly_unlocked_achievements = []
+        newly_unlocked_achievements.extend(
+            self.achievement_engine.check_progression_achievements(self.user_rank, score_after_combo)
         )
+        newly_unlocked_achievements.extend(
+            self.achievement_engine.check_excellence_achievements(category_scores)
+        )
+
+        # Final score (before time modifiers)
+        final_score = score_after_combo + streak_bonus_points
+
+        # Phase 10: Detect performance regression
+        current_efficiency = token_efficiency.get("efficiency_ratio", 1.0)
+        personal_best_efficiency = token_efficiency.get("personal_best_efficiency", current_efficiency)
+        recent_scores = self.user_profile.get("recent_session_scores", [])
+
+        regression_analysis = self.regression_detector.analyze_regression(
+            current_score=final_score,
+            current_efficiency=current_efficiency,
+            personal_best_efficiency=personal_best_efficiency,
+            recent_scores=recent_scores,
+        )
+
+        # Apply time-based mechanics (recency bonus, inactivity decay)
+        time_adjusted = TimeBasedMechanics.apply_time_modifiers(
+            final_score,
+            datetime.now().isoformat(),
+            self.user_profile.get("last_updated")
+        )
+        time_adjusted_score = time_adjusted["adjusted_score"]
+
+        # Build comprehensive breakdown
+        breakdown = {
+            "token_efficiency": token_efficiency,
+            "optimization_adoption": optimization_adoption,
+            "improvement_trend": improvement_trend,
+            "waste_awareness": waste_awareness,
+            "best_practices": best_practices,
+            "cache_effectiveness": cache_effectiveness,
+            "tool_efficiency": tool_efficiency,
+            "cost_efficiency": cost_efficiency,
+            "session_focus": session_focus,
+            "learning_growth": learning_growth,
+        }
+
+        # Build bonuses breakdown
+        bonuses = {
+            "streak": {
+                "multiplier": round(streak_multiplier, 2),
+                "bonus_points": round(streak_bonus_points, 1),
+                "streak_length": streak_info["streak_length"],
+            },
+            "combo": {
+                "bonus_points": round(combo_bonus_points, 1),
+                "tier": combo_result["tier_name"],
+                "excellent_categories": combo_result["excellent_categories"],
+            },
+            "time_modifiers": {
+                "recency_multiplier": round(time_adjusted["recency"]["multiplier"], 2),
+                "decay_multiplier": round(time_adjusted["decay"]["multiplier"] if time_adjusted["decay"] else 1.0, 2),
+                "combined_multiplier": round(time_adjusted["combined_multiplier"], 2),
+            },
+            "achievements": {
+                "newly_unlocked": len(newly_unlocked_achievements),
+                "total_unlocked": len(self.achievement_engine.unlocked_achievements),
+            }
+        }
+
+        # Calculate percentages
+        max_achievable = max_base + sum(self.BONUS_WEIGHTS.values())
 
         return {
-            "total_score": round(total_score, 1),
-            "max_possible": max_possible,
-            "percentage": round((total_score / max_possible) * 100, 1),
-            "breakdown": {
-                "token_efficiency": token_efficiency,
-                "optimization_adoption": optimization_adoption,
-                "self_sufficiency": self_sufficiency,
-                "improvement_trend": improvement_trend,
-                "best_practices": best_practices,
-                "cache_effectiveness": cache_effectiveness,
-                "tool_efficiency": tool_efficiency,
-                "cost_efficiency": cost_efficiency,
-                "session_focus": session_focus,
-                "learning_growth": learning_growth,
-                "waste_awareness": waste_awareness
+            "total_score": round(time_adjusted_score, 1),
+            "base_score": round(base_total_score, 1),
+            "with_bonuses": round(score_after_combo + streak_bonus_points, 1),
+            "max_base": max_base,
+            "max_achievable": max_achievable,
+            "percentage": round((time_adjusted_score / max_achievable) * 100, 1),
+            "percentage_of_base": round((base_total_score / max_base) * 100, 1),
+            "breakdown": breakdown,
+            "bonuses": bonuses,
+            "newly_unlocked_achievements": [
+                {
+                    "id": ach["achievement_id"],
+                    "name": ach["name"],
+                    "points": ach["points"],
+                }
+                for ach in newly_unlocked_achievements
+            ],
+            "user_rank": self.user_rank,
+            "difficulty_info": self.difficulty,
+            "streak_info": streak_info,
+            "combo_info": combo_result,
+            "regression_analysis": {  # Phase 10: Performance regression detection
+                "has_regressed": regression_analysis.get("has_regressed", False),
+                "severity": regression_analysis.get("severity", "none"),
+                "efficiency": regression_analysis.get("efficiency", {}),
+                "score": regression_analysis.get("score", {}),
+                "recommendation": regression_analysis.get("recommendation", ""),
             },
-            "calculated_at": datetime.now().isoformat()
+            "calculated_at": datetime.now().isoformat(),
+            "version": "3.0"
         }

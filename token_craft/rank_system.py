@@ -1,7 +1,8 @@
 """
 Space Exploration Rank System
 
-7 ranks from Cadet to Galactic Legend based on token optimization mastery.
+10 ranks from Cadet to Galactic Legend based on token optimization mastery.
+Updated for v3.0 - 2300 total points (exponential progression, 3-6 months to max).
 """
 
 from typing import Dict, Optional
@@ -10,61 +11,86 @@ from typing import Dict, Optional
 class SpaceRankSystem:
     """Manage space exploration ranks and progression."""
 
-    # Updated for v2.0 - 1350 total points (was 1000)
+    # Updated for v3.0 - 2300 total points, 10 ranks, exponential curve
+    # Time to max: ~3-6 months of sustained excellence (vs 2 weeks in v2.0)
     RANKS = [
         {
             "name": "Cadet",
             "min": 0,
-            "max": 269,
+            "max": 99,
             "description": "Academy training, learning fundamentals",
             "badge_id": "token_craft_cadet",
             "icon": "🎓"
         },
         {
-            "name": "Pilot",
-            "min": 270,
-            "max": 539,
-            "description": "First missions, gaining experience",
-            "badge_id": "token_craft_pilot",
-            "icon": "✈️"
-        },
-        {
             "name": "Navigator",
-            "min": 540,
-            "max": 809,
+            "min": 100,
+            "max": 199,
             "description": "Charting efficient courses",
             "badge_id": "token_craft_navigator",
             "icon": "🧭"
         },
         {
-            "name": "Commander",
-            "min": 810,
-            "max": 1079,
-            "description": "Leading missions with precision",
-            "badge_id": "token_craft_commander",
-            "icon": "⭐"
+            "name": "Pilot",
+            "min": 200,
+            "max": 349,
+            "description": "First missions, gaining experience",
+            "badge_id": "token_craft_pilot",
+            "icon": "✈️"
+        },
+        {
+            "name": "Explorer",
+            "min": 350,
+            "max": 549,
+            "description": "Venturing into uncharted space",
+            "badge_id": "token_craft_explorer",
+            "icon": "🚀"
         },
         {
             "name": "Captain",
-            "min": 1080,
-            "max": 1349,
-            "description": "Commanding the ship with mastery",
+            "min": 550,
+            "max": 799,
+            "description": "Commanding missions with excellence",
             "badge_id": "token_craft_captain",
             "icon": "👨‍✈️"
         },
         {
+            "name": "Commander",
+            "min": 800,
+            "max": 1099,
+            "description": "Leading with precision and strategy",
+            "badge_id": "token_craft_commander",
+            "icon": "⭐"
+        },
+        {
             "name": "Admiral",
-            "min": 1350,
-            "max": 1619,
+            "min": 1100,
+            "max": 1449,
             "description": "Fleet command, strategic excellence",
             "badge_id": "token_craft_admiral",
             "icon": "🎖️"
         },
         {
+            "name": "Commodore",
+            "min": 1450,
+            "max": 1849,
+            "description": "Supreme commander of fleets",
+            "badge_id": "token_craft_commodore",
+            "icon": "👑"
+        },
+        {
+            "name": "Fleet Admiral",
+            "min": 1850,
+            "max": 2299,
+            "description": "Master of token optimization",
+            "badge_id": "token_craft_fleet_admiral",
+            "icon": "⚔️"
+        },
+        {
             "name": "Galactic Legend",
-            "min": 1620,
+            "min": 2300,
             "max": 9999,
-            "description": "Explored uncharted territories",
+            "description": "Explored uncharted territories, achieved mastery",
             "badge_id": "token_craft_legend",
             "icon": "🌌"
         },
@@ -187,13 +213,13 @@ class SpaceRankSystem:
     @classmethod
     def calculate_rank_level(cls, score: int) -> int:
         """
-        Get numeric rank level (1-7).
+        Get numeric rank level (1-10).
 
         Args:
             score: User's total score
 
         Returns:
-            Rank level from 1 (Cadet) to 7 (Galactic Legend)
+            Rank level from 1 (Cadet) to 10 (Galactic Legend)
         """
         rank_info = cls.get_rank(score)
         for i, rank in enumerate(cls.RANKS):

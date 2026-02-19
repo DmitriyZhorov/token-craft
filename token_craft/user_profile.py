@@ -2,6 +2,7 @@
 User Profile Management
 
 Stores and manages user token optimization progress.
+Schema v3.0: Includes streak tracking, seasonal scoring, achievements, and legacy v2.0 data.
 """
 
 import json
@@ -65,11 +66,13 @@ class UserProfile:
             return self._create_new_profile()
 
     def _create_new_profile(self) -> Dict:
-        """Create a new profile structure."""
+        """Create a new profile structure (v3.0 schema)."""
+        now = datetime.now().isoformat()
         return {
+            "version": "3.0",
             "user_email": self.user_email,
-            "created_at": datetime.now().isoformat(),
-            "last_updated": datetime.now().isoformat(),
+            "created_at": now,
+            "last_updated": now,
             "current_rank": "Cadet",
             "current_score": 0,
             "rank_achieved_at": None,
@@ -80,18 +83,46 @@ class UserProfile:
             "scores": {
                 "token_efficiency": 0,
                 "optimization_adoption": 0,
-                "self_sufficiency": 0,
                 "improvement_trend": 0,
                 "best_practices": 0,
                 "cache_effectiveness": 0,
                 "tool_efficiency": 0,
-                "cost_efficiency": 0,
                 "session_focus": 0,
+                "cost_efficiency": 0,
                 "learning_growth": 0,
-                "waste_awareness": 0
+                "waste_awareness": 0,
             },
+            # Streak & Combo System (v3.0)
+            "streak_info": {
+                "current": {
+                    "length": 0,
+                    "start_date": None,
+                    "last_session_date": None,
+                    "last_session_score": 0,
+                    "bonus_points_earned": 0,
+                },
+                "best": {
+                    "length": 0,
+                    "start_date": None,
+                    "last_session_date": None,
+                    "last_session_score": 0,
+                    "bonus_points_earned": 0,
+                }
+            },
+            # Seasonal Scoring (v3.0)
+            "seasonal_info": {
+                "current_season_score": 0,
+                "lifetime_score": 0,
+                "current_season_start": now,
+                "last_reset": None,
+            },
+            # History and achievements
             "history": [],
             "achievements": [],
+            # Migration metadata (v3.0)
+            "legacy": None,  # Populated during migration from v2.0
+            "migration": None,
+            # Preferences
             "preferences": {
                 "theme": "space_exploration",
                 "notifications": True
@@ -130,10 +161,18 @@ class UserProfile:
                 "score": new_score
             })
 
-        # Update detailed scores (dynamic - supports all categories)
+        # Update detailed scores (v3.0: removed self_sufficiency)
         self.data["scores"] = {
-            cat: cat_data["score"]
-            for cat, cat_data in score_data["breakdown"].items()
+            "token_efficiency": score_data["breakdown"].get("token_efficiency", {}).get("score", 0),
+            "optimization_adoption": score_data["breakdown"].get("optimization_adoption", {}).get("score", 0),
+            "improvement_trend": score_data["breakdown"].get("improvement_trend", {}).get("score", 0),
+            "best_practices": score_data["breakdown"].get("best_practices", {}).get("score", 0),
+            "cache_effectiveness": score_data["breakdown"].get("cache_effectiveness", {}).get("score", 0),
+            "tool_efficiency": score_data["breakdown"].get("tool_efficiency", {}).get("score", 0),
+            "session_focus": score_data["breakdown"].get("session_focus", {}).get("score", 0),
+            "cost_efficiency": score_data["breakdown"].get("cost_efficiency", {}).get("score", 0),
+            "learning_growth": score_data["breakdown"].get("learning_growth", {}).get("score", 0),
+            "waste_awareness": score_data["breakdown"].get("waste_awareness", {}).get("score", 0),
         }
 
         # Update stats

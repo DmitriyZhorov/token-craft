@@ -173,8 +173,7 @@ class ProgressVisualizer:
             ("tool_efficiency", "Tool Efficiency"),
             ("cost_efficiency", "Cost Efficiency"),
             ("session_focus", "Session Focus"),
-            ("learning_growth", "Learning & Growth"),
-            ("waste_awareness", "Waste Awareness")
+            ("learning_growth", "Learning & Growth")
         ]
 
         for cat_key, cat_name in categories:
