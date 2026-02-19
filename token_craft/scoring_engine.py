@@ -1192,7 +1192,8 @@ class TokenCraftScorer:
                 "percentage": 0.0,
                 "message": "Keep improving! Scores will increase with real efficiency gains.",
                 "sessions": self.total_sessions,
-                "note": "v3.0: No warm-up bonuses - earn points through actual improvement"
+                "note": "v3.0: No warm-up bonuses - earn points through actual improvement",
+                "details": "Warm-up bonus removed. Earn points through 5%+ efficiency improvement."
             }
 
         # Split sessions into early (first 1/3) and recent (last 1/3)
