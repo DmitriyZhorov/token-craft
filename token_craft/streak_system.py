@@ -48,13 +48,23 @@ class StreakSystem:
     def _load_current_streak(self) -> Dict:
         """Load current streak from profile or initialize."""
         if "streak_info" in self.user_profile:
-            return self.user_profile["streak_info"].get("current", self._new_streak())
+            streak = self.user_profile["streak_info"].get("current", self._new_streak())
+            # Ensure all required keys exist (backwards compatibility)
+            for key in ["length", "start_date", "last_session_date", "last_session_score", "bonus_points_earned"]:
+                if key not in streak:
+                    streak[key] = self._new_streak()[key]
+            return streak
         return self._new_streak()
 
     def _load_best_streak(self) -> Dict:
         """Load best streak from profile or initialize."""
         if "streak_info" in self.user_profile:
-            return self.user_profile["streak_info"].get("best", self._new_streak())
+            streak = self.user_profile["streak_info"].get("best", self._new_streak())
+            # Ensure all required keys exist (backwards compatibility)
+            for key in ["length", "start_date", "last_session_date", "last_session_score", "bonus_points_earned"]:
+                if key not in streak:
+                    streak[key] = self._new_streak()[key]
+            return streak
         return self._new_streak()
 
     @staticmethod
@@ -111,7 +121,7 @@ class StreakSystem:
                 self.best_streak = dict(self.current_streak)
 
             # Initialize start date if new streak
-            if self.current_streak["start_date"] is None:
+            if self.current_streak.get("start_date") is None:
                 self.current_streak["start_date"] = session_date
 
             self.current_streak["last_session_date"] = session_date
@@ -161,12 +171,12 @@ class ComboBonus:
     # Combo thresholds (80% = excellent in category)
     COMBO_THRESHOLD = 0.80
 
-    # Bonus tiers
+    # Bonus tiers with expected field names
     COMBO_TIERS = [
-        {"categories": 2, "bonus": 25, "name": "Focused"},
-        {"categories": 3, "bonus": 50, "name": "Well-Rounded"},
-        {"categories": 4, "bonus": 100, "name": "Proficiency"},
-        {"categories": 5, "bonus": 150, "name": "MASTERY"},
+        {"categories_min": 2, "bonus_points": 25, "name": "Focused"},
+        {"categories_min": 3, "bonus_points": 50, "name": "Well-Rounded"},
+        {"categories_min": 4, "bonus_points": 100, "name": "Proficiency"},
+        {"categories_min": 5, "bonus_points": 150, "name": "MASTERY"},
     ]
 
     @staticmethod
@@ -184,6 +194,32 @@ class ComboBonus:
         if max_score == 0:
             return 0.0
         return min(1.0, score / max_score)
+
+    @staticmethod
+    def calculate_combo_bonus(category_scores: Dict[str, Dict]) -> int:
+        """
+        Calculate combo bonus from category scores.
+
+        Args:
+            category_scores: Dict of {category: {"score": X, "max_score": Y}}
+
+        Returns:
+            Bonus points to award
+        """
+        # Count categories at 80%+
+        excellent_count = 0
+        for category, data in category_scores.items():
+            if data.get("max_score", 0) > 0:
+                pct = data["score"] / data["max_score"]
+                if pct >= 0.80:
+                    excellent_count += 1
+
+        # Find matching tier
+        for tier in reversed(ComboBonus.COMBO_TIERS):
+            if excellent_count >= tier["categories_min"]:
+                return tier["bonus_points"]
+
+        return 0
 
     @classmethod
     def check_combo(cls, category_scores: Dict[str, Dict]) -> Dict:
@@ -208,13 +244,13 @@ class ComboBonus:
         # Find matching tier
         bonus_tier = None
         for tier in cls.COMBO_TIERS:
-            if excellent_categories >= tier["categories"]:
+            if excellent_categories >= tier["categories_min"]:
                 bonus_tier = tier
 
         bonus = 0
         tier_name = "None"
         if bonus_tier:
-            bonus = bonus_tier["bonus"]
+            bonus = bonus_tier["bonus_points"]
             tier_name = bonus_tier["name"]
 
         return {

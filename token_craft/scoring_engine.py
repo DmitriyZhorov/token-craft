@@ -110,6 +110,16 @@ class TokenCraftScorer:
         # Parse and prepare data
         self._prepare_data()
 
+    @property
+    def weights(self) -> Dict[str, int]:
+        """Expose WEIGHTS class constant as instance property."""
+        return self.WEIGHTS
+
+    @property
+    def bonus_weights(self) -> Dict[str, int]:
+        """Expose BONUS_WEIGHTS class constant as instance property."""
+        return self.BONUS_WEIGHTS
+
     def _prepare_data(self):
         """Parse history and stats into usable format."""
         # Calculate basic metrics
