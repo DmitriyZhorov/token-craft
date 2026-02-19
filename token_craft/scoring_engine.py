@@ -44,8 +44,11 @@ class TokenCraftScorer:
     # Scoring weights v3.0 (total = 2300 points)
     # Self-Sufficiency (200 pts) removed - duplicate of direct_commands check
     # Warm-up bonuses removed - no participation trophies
+    # Scoring weights v3.0 (total = 2300 points)
+    # Self-Sufficiency (200 pts) removed - duplicate of direct_commands check
+    # Warm-up bonuses removed - no participation trophies
     WEIGHTS = {
-        "token_efficiency": 250,         # 10.9% base (with difficulty/streak it becomes adaptive)
+        "token_efficiency": 250,         # 10.9% base
         "optimization_adoption": 400,    # 17.4% (absorbed Self-Sufficiency)
         "improvement_trend": 125,        # 5.4%
         "waste_awareness": 100,          # 4.3%
@@ -55,9 +58,10 @@ class TokenCraftScorer:
         "session_focus": 75,             # 3.3% (expanded from 50)
         "learning_growth": 75,           # 3.3% (no auto-bonus)
         "best_practices": 50,            # 2.2%
+        "bonus_pool": 1000,              # 43.5% (combines streak, combo, achievements, rank bonuses)
     }
 
-    # Bonus systems weights (additional to base scoring)
+    # Bonus systems weights (additional to base scoring) - kept for compatibility
     BONUS_WEIGHTS = {
         "streak_multiplier": 75,         # Max +75 from 1.25x multiplier
         "combo_bonuses": 150,            # Max +150 from MASTERY combo
