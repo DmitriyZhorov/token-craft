@@ -325,6 +325,8 @@ class TokenCraftScorer:
             "baseline_avg": round(adjusted_baseline, 0),
             "baseline_type": "dynamic" if using_dynamic else "fixed",
             "ratio": round(ratio, 2),
+            "efficiency_ratio": round(user_avg, 0),  # For regression detection
+            "personal_best_efficiency": self.user_profile.get("personal_best_efficiency", round(user_avg, 0)),
             "tier": tier,
             "improvement_pct": round(improvement_pct, 1),
             "difficulty_rank": self.user_rank,
@@ -1491,8 +1493,18 @@ class TokenCraftScorer:
         final_score = score_after_combo + streak_bonus_points
 
         # Phase 10: Detect performance regression
-        current_efficiency = token_efficiency.get("efficiency_ratio", 1.0)
+        current_efficiency = token_efficiency.get("efficiency_ratio", self.avg_tokens_per_session)
         personal_best_efficiency = token_efficiency.get("personal_best_efficiency", current_efficiency)
+
+        # If personal_best not provided, try to derive from recent scores (lower token count is better)
+        if personal_best_efficiency == current_efficiency:
+            recent_scores = self.user_profile.get("recent_session_scores", [])
+            if recent_scores and len(recent_scores) > 1:
+                # Use the minimum (best) score as personal best
+                best_score = min(recent_scores)
+                if best_score > 0:
+                    personal_best_efficiency = best_score
+
         recent_scores = self.user_profile.get("recent_session_scores", [])
 
         regression_analysis = self.regression_detector.analyze_regression(

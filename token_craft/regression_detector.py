@@ -51,7 +51,8 @@ class RegressionDetector:
             }
 
         efficiency_ratio = current_efficiency / personal_best_efficiency
-        drop_pct = max(0, 1.0 - efficiency_ratio)
+        # Drop is when current > best (ratio > 1), so: drop = (ratio - 1) if ratio > 1 else 0
+        drop_pct = max(0, efficiency_ratio - 1.0)
 
         has_regressed = drop_pct >= cls.TOKEN_EFFICIENCY_REGRESSION_THRESHOLD
 
