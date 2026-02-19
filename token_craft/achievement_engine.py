@@ -1,13 +1,14 @@
 """
 Achievement System
 
-Gamification engine tracking 25+ achievements across 6 categories:
+Gamification engine tracking 30+ achievements across 7 categories:
 - Progression (5): Rank milestones
 - Excellence (5): Category mastery
 - Streaks (3): Consecutive improvement rewards
 - Combos (3): Multi-category excellence
 - Exploration (4): Session volume milestones
 - Special (5): Unique challenges
+- Sustainability (5): Healthy optimization patterns
 """
 
 from typing import Dict, List, Optional
@@ -274,6 +275,52 @@ class AchievementEngine:
             "Set new personal high score",
             120,
             "🏔️",
+        ),
+        # Sustainability (5) - Healthy optimization patterns
+        Achievement(
+            "sustainability_paced",
+            "Steady Climber",
+            "Sustainability",
+            "Consistent, sustainable growth pattern",
+            "Reach 500 pts with <5% month-over-month volatility",
+            100,
+            "🌱",
+        ),
+        Achievement(
+            "sustainability_balanced",
+            "Balanced Optimizer",
+            "Sustainability",
+            "Avoid over-optimizing single categories",
+            "No single category >90% for 60+ days (prevent tunnel vision)",
+            75,
+            "⚖️",
+        ),
+        Achievement(
+            "sustainability_rest",
+            "Rest is Productive",
+            "Sustainability",
+            "Take healthy breaks without streak penalties",
+            "Maintain 80%+ categories after 7+ day break",
+            80,
+            "😴",
+        ),
+        Achievement(
+            "sustainability_longterm",
+            "Marathon Mindset",
+            "Sustainability",
+            "Sustained 6-month engagement at steady pace",
+            "180+ days of consistent usage (no burnout dips)",
+            150,
+            "🏃",
+        ),
+        Achievement(
+            "sustainability_wisdom",
+            "Wisdom Over Grind",
+            "Sustainability",
+            "Prioritize quality over quantity",
+            "Achieve 75%+ efficiency with 20% fewer sessions than baseline",
+            125,
+            "🧠",
         ),
     ]
 

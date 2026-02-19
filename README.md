@@ -6,9 +6,63 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-79%2B%20passing-brightgreen)]()
 
-## Features
+## Philosophy: Prudent Optimization, Not Maximization
 
-### 🎮 Gamification System (v3.0)
+**Important:** Token-Craft is designed to support *prudent token optimization* aligned with Anthropic's principles, **not** aggressive token-maximization or unsustainable practices.
+
+### Core Principles
+
+1. **Sustainability > Speed** - Healthy optimization patterns win over sprint mentality
+2. **Quality > Quantity** - Better prompts matter more than volume
+3. **Rest is Productivity** - Breaks are essential; achievement systems reward sustainable pacing
+4. **Wisdom Over Grind** - Prioritize getting more done with fewer tokens, not burning out chasing points
+
+### What Makes Optimization "Prudent"
+
+✅ **Prudent:**
+- Using XML tags for clearer prompt structure
+- Deferring documentation until code is ready to ship
+- Caching intermediate results appropriately
+- Asking clear, focused questions instead of verbose ones
+- Taking breaks when needed (no penalty)
+
+❌ **Not Prudent:**
+- Over-optimizing for score at the expense of functionality
+- Obsessive token-counting that delays shipping
+- Sacrificing clarity for brevity
+- Preventing necessary work due to "sustainability streaks"
+
+### Sustainability Achievements
+
+Token-Craft v3.0 rewards healthy optimization with **Sustainability** achievements:
+
+- **Steady Climber** (100 pts) - Consistent, predictable growth
+- **Balanced Optimizer** (75 pts) - No tunnel vision on single categories
+- **Rest is Productive** (80 pts) - Maintain performance after healthy breaks
+- **Marathon Mindset** (150 pts) - 180+ days at sustainable pace (no burnout)
+- **Wisdom Over Grind** (125 pts) - Achieve goals with 20% fewer sessions
+
+### Why Gamification?
+
+Token-Craft uses gamification to make prudent optimization *engaging*, not to maximize token reduction at all costs:
+
+1. **Motivation** - Ranks and achievements make good practices feel rewarding
+2. **Visibility** - Scoring shows where improvements matter most
+3. **Feedback** - Quick insights into usage patterns
+4. **Sustainability** - Difficulty scaling and seasonal resets prevent burnout sprints
+
+### When to Ignore Points
+
+If pursuing a Token-Craft goal conflicts with shipping quality code, **ship the code**. Specifically:
+
+- If adding comments clarifies intent, add them (documentation deferred != documentation denied)
+- If verbose prompts get better results, use them
+- If you need a break, take it (achievements will wait)
+- If optimization feels like a burden, stop and reassess
+
+Token-Craft scores are *relative* progress metrics, not absolute optimization targets.
+
+---
 
 - **10 Space Ranks** - Cadet → Galactic Legend (exponential progression)
 - **2300+ Points Max** - Up from 1450 in v2.0 (59% harder progression)
@@ -151,6 +205,7 @@ Rewards consistency:
 - **Combos** (3): Well-Rounded, Proficiency, Perfectionist
 - **Exploration** (4): 10/50/100/200 sessions
 - **Special** (5): Zero Waste Pioneer, Best Practice Champion, etc.
+- **Sustainability** (5): Steady Climber, Balanced Optimizer, Rest is Productive, Marathon Mindset, Wisdom Over Grind
 
 ### Regression Detection
 Multi-signal analysis combining:
@@ -231,13 +286,14 @@ Token-Craft stores data in `~/.claude/` directory:
 - **New**: Difficulty scaling by rank (up to 43% harder)
 - **New**: Streak multipliers (1.0x-1.25x) + bonus points
 - **New**: Combo bonuses (+25 to +150 pts)
-- **New**: 25+ achievement system with unlocks
+- **New**: 30+ achievement system including Sustainability category
 - **New**: Time-based mechanics (recency, decay, seasonal resets)
 - **New**: Regression detection with severity levels
 - **New**: Migration engine for v2.0→v3.0 backwards compatibility
+- **Philosophy**: Emphasis on sustainable, prudent optimization vs aggressive maximization
 - **Removed**: Duplicate self-sufficiency category
 - **Removed**: Warm-up bonuses (participation trophies)
-- **Impact**: Time to max rank: 3-6 months (vs 5-10 sessions in v2.0)
+- **Impact**: Time to max rank: 3-6 months (vs 5-10 sessions in v2.0); rewards healthy patterns
 
 ### v2.0 (Earlier)
 - 7 space ranks (Cadet-Legend)
