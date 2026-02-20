@@ -10,7 +10,8 @@ from datetime import datetime
 
 # Optional import
 try:
-    import requests
+    import requests  # type: ignore[import]
+
     HAS_REQUESTS = True
 except ImportError:
     HAS_REQUESTS = False
@@ -19,7 +20,7 @@ except ImportError:
 class HeroAPIClient:
     """Client for hero.epam.com API."""
 
-    def __init__(self, api_url: str = None, api_key: str = None):
+    def __init__(self, api_url: Optional[str] = None, api_key: Optional[str] = None):
         """
         Initialize hero API client.
 
@@ -31,12 +32,14 @@ class HeroAPIClient:
         self.api_key = api_key
 
         if HAS_REQUESTS:
-            self.session = requests.Session()
+            self.session = requests.Session()  # type: ignore[attr-defined]
             if self.api_key:
-                self.session.headers.update({
-                    "Authorization": f"Bearer {self.api_key}",
-                    "Content-Type": "application/json"
-                })
+                self.session.headers.update(
+                    {
+                        "Authorization": f"Bearer {self.api_key}",
+                        "Content-Type": "application/json",
+                    }
+                )
         else:
             self.session = None
 
@@ -58,7 +61,7 @@ class HeroAPIClient:
             "issued_date": datetime.now().isoformat(),
             "evidence": evidence,
             "issuer": "token-craft-system",
-            "auto_issued": True
+            "auto_issued": True,
         }
 
         try:
@@ -69,7 +72,7 @@ class HeroAPIClient:
                     "success": True,
                     "badge_id": badge_id,
                     "user_email": user_email,
-                    "message": "Badge issued successfully (mock)"
+                    "message": "Badge issued successfully (mock)",
                 }
 
             # TODO: Replace with actual API endpoint when available
@@ -83,16 +86,15 @@ class HeroAPIClient:
                 "success": True,
                 "badge_id": badge_id,
                 "user_email": user_email,
-                "message": "Badge issued successfully (mock)"
+                "message": "Badge issued successfully (mock)",
             }
 
         except Exception as e:
-            return {
-                "success": False,
-                "error": str(e)
-            }
+            return {"success": False, "error": str(e)}
 
-    def revoke_badge(self, user_email: str, badge_id: str, reason: str = None) -> Dict:
+    def revoke_badge(
+        self, user_email: str, badge_id: str, reason: Optional[str] = None
+    ) -> Dict:
         """
         Revoke badge from user (if rank drops).
 
@@ -109,7 +111,7 @@ class HeroAPIClient:
             "badge_id": badge_id,
             "revoked_date": datetime.now().isoformat(),
             "reason": reason or "Rank dropped below threshold",
-            "revoked_by": "token-craft-system"
+            "revoked_by": "token-craft-system",
         }
 
         try:
@@ -119,7 +121,7 @@ class HeroAPIClient:
                 return {
                     "success": True,
                     "badge_id": badge_id,
-                    "message": "Badge revoked successfully (mock)"
+                    "message": "Badge revoked successfully (mock)",
                 }
 
             # TODO: Replace with actual API endpoint
@@ -132,14 +134,11 @@ class HeroAPIClient:
             return {
                 "success": True,
                 "badge_id": badge_id,
-                "message": "Badge revoked successfully (mock)"
+                "message": "Badge revoked successfully (mock)",
             }
 
         except Exception as e:
-            return {
-                "success": False,
-                "error": str(e)
-            }
+            return {"success": False, "error": str(e)}
 
     def get_user_badges(self, user_email: str) -> List[Dict]:
         """
@@ -160,7 +159,7 @@ class HeroAPIClient:
                         "title": "Token Craft Captain",
                         "issued_date": "2026-01-15T10:00:00Z",
                         "expires": "2027-01-15T10:00:00Z",
-                        "status": "active"
+                        "status": "active",
                     }
                 ]
 
@@ -176,7 +175,7 @@ class HeroAPIClient:
                     "title": "Token Craft Captain",
                     "issued_date": "2026-01-15T10:00:00Z",
                     "expires": "2027-01-15T10:00:00Z",
-                    "status": "active"
+                    "status": "active",
                 }
             ]
 
@@ -184,7 +183,9 @@ class HeroAPIClient:
             print(f"Error fetching badges: {e}")
             return []
 
-    def create_certification(self, user_email: str, rank: str, score: int, metrics: Dict) -> Dict:
+    def create_certification(
+        self, user_email: str, rank: str, score: int, metrics: Dict
+    ) -> Dict:
         """
         Create certification for user.
 
@@ -202,7 +203,7 @@ class HeroAPIClient:
             "Commander": "foundation",
             "Captain": "professional",
             "Admiral": "professional",
-            "Galactic Legend": "master"
+            "Galactic Legend": "master",
         }
 
         cert_level = certification_levels.get(rank, "foundation")
@@ -217,7 +218,7 @@ class HeroAPIClient:
             "rank_achieved": rank,
             "score": score,
             "evidence": metrics,
-            "issuer": "EPAM Token-Craft System"
+            "issuer": "EPAM Token-Craft System",
         }
 
         try:
@@ -227,7 +228,7 @@ class HeroAPIClient:
                 return {
                     "success": True,
                     "certification": certification,
-                    "message": "Certification issued successfully (mock)"
+                    "message": "Certification issued successfully (mock)",
                 }
 
             # TODO: Replace with actual API endpoint
@@ -240,14 +241,11 @@ class HeroAPIClient:
             return {
                 "success": True,
                 "certification": certification,
-                "message": "Certification issued successfully (mock)"
+                "message": "Certification issued successfully (mock)",
             }
 
         except Exception as e:
-            return {
-                "success": False,
-                "error": str(e)
-            }
+            return {"success": False, "error": str(e)}
 
     def _calculate_expiry(self, rank: str) -> str:
         """Calculate certification expiry date based on rank."""
@@ -260,7 +258,7 @@ class HeroAPIClient:
             "Commander": 6,
             "Captain": 12,
             "Admiral": 12,
-            "Galactic Legend": 0  # No expiry
+            "Galactic Legend": 0,  # No expiry
         }
 
         months = expiry_months.get(rank, 6)
@@ -271,7 +269,9 @@ class HeroAPIClient:
         expiry_date = datetime.now() + timedelta(days=months * 30)
         return expiry_date.isoformat()
 
-    def sync_badges_with_rank(self, user_email: str, current_rank: str, previous_rank: str = None) -> Dict:
+    def sync_badges_with_rank(
+        self, user_email: str, current_rank: str, previous_rank: Optional[str] = None
+    ) -> Dict:
         """
         Sync badges based on rank changes.
 
@@ -286,7 +286,7 @@ class HeroAPIClient:
         result = {
             "badges_issued": [],
             "badges_revoked": [],
-            "certifications_updated": []
+            "certifications_updated": [],
         }
 
         # Map ranks to badge IDs
@@ -297,7 +297,7 @@ class HeroAPIClient:
             "Commander": "token_craft_commander",
             "Captain": "token_craft_captain",
             "Admiral": "token_craft_admiral",
-            "Galactic Legend": "token_craft_legend"
+            "Galactic Legend": "token_craft_legend",
         }
 
         current_badge = rank_badges.get(current_rank)
@@ -307,7 +307,7 @@ class HeroAPIClient:
             issue_result = self.issue_badge(
                 user_email,
                 current_badge,
-                {"rank": current_rank, "timestamp": datetime.now().isoformat()}
+                {"rank": current_rank, "timestamp": datetime.now().isoformat()},
             )
             if issue_result.get("success"):
                 result["badges_issued"].append(current_badge)
@@ -319,7 +319,7 @@ class HeroAPIClient:
                 revoke_result = self.revoke_badge(
                     user_email,
                     previous_badge,
-                    f"Rank changed from {previous_rank} to {current_rank}"
+                    f"Rank changed from {previous_rank} to {current_rank}",
                 )
                 if revoke_result.get("success"):
                     result["badges_revoked"].append(previous_badge)
@@ -345,7 +345,7 @@ class MockHeroClient(HeroAPIClient):
             "badge_id": badge_id,
             "issued_date": datetime.now().isoformat(),
             "evidence": evidence,
-            "status": "active"
+            "status": "active",
         }
 
         self.badges[user_email].append(badge)
@@ -354,7 +354,7 @@ class MockHeroClient(HeroAPIClient):
             "success": True,
             "badge_id": badge_id,
             "user_email": user_email,
-            "message": "Badge issued successfully (mock)"
+            "message": "Badge issued successfully (mock)",
         }
 
     def get_user_badges(self, user_email: str) -> List[Dict]:

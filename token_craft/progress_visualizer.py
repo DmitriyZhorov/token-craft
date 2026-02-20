@@ -4,15 +4,20 @@ Progress Visualization
 Creates ASCII art progress bars, badges, and visual indicators.
 """
 
-from typing import Dict
+from typing import Dict, Optional
 
 
 class ProgressVisualizer:
     """Create visual representations of progress."""
 
     @staticmethod
-    def create_progress_bar(current: int, maximum: int, width: int = 50,
-                          filled_char: str = "█", empty_char: str = "░") -> str:
+    def create_progress_bar(
+        current: int,
+        maximum: int,
+        width: int = 50,
+        filled_char: str = "█",
+        empty_char: str = "░",
+    ) -> str:
         """
         Create ASCII progress bar.
 
@@ -75,7 +80,9 @@ class ProgressVisualizer:
         return f"\n{border}\n{header}\n{border}"
 
     @staticmethod
-    def create_score_display(category: str, score: float, max_score: float, width: int = 30) -> str:
+    def create_score_display(
+        category: str, score: float, max_score: float, width: int = 30
+    ) -> str:
         """
         Create single line score display with bar.
 
@@ -95,7 +102,9 @@ class ProgressVisualizer:
         category_display = category.replace("_", " ").title()
         category_padded = category_display.ljust(22)
 
-        return f"{category_padded} [{bar}] {score:.0f}/{max_score:.0f} ({percentage:.0f}%)"
+        return (
+            f"{category_padded} [{bar}] {score:.0f}/{max_score:.0f} ({percentage:.0f}%)"
+        )
 
     @staticmethod
     def create_trend_indicator(value: float) -> str:
@@ -116,7 +125,9 @@ class ProgressVisualizer:
             return "→"
 
     @staticmethod
-    def create_full_report_header(rank_name: str, icon: str, score: int, next_rank: Dict = None) -> str:
+    def create_full_report_header(
+        rank_name: str, icon: str, score: int, next_rank: Optional[Dict] = None
+    ) -> str:
         """
         Create full report header with rank and progress.
 
@@ -138,10 +149,16 @@ class ProgressVisualizer:
         # Current rank
         if next_rank:
             bar = ProgressVisualizer.create_progress_bar(score, next_rank["min"], 40)
-            lines.append(f"Current Rank: [{rank_name.upper()}] {bar} {score}/{next_rank['min']}")
-            lines.append(f"Next Rank:    [{next_rank['name'].upper()}] in {next_rank['points_needed']} points")
+            lines.append(
+                f"Current Rank: [{rank_name.upper()}] {bar} {score}/{next_rank['min']}"
+            )
+            lines.append(
+                f"Next Rank:    [{next_rank['name'].upper()}] in {next_rank['points_needed']} points"
+            )
         else:
-            lines.append(f"Current Rank: [{rank_name.upper()}] {icon} (MAX RANK ACHIEVED!)")
+            lines.append(
+                f"Current Rank: [{rank_name.upper()}] {icon} (MAX RANK ACHIEVED!)"
+            )
             lines.append(f"Current Score: {score} points")
 
         lines.append("")
@@ -173,7 +190,7 @@ class ProgressVisualizer:
             ("tool_efficiency", "Tool Efficiency"),
             ("cost_efficiency", "Cost Efficiency"),
             ("session_focus", "Session Focus"),
-            ("learning_growth", "Learning & Growth")
+            ("learning_growth", "Learning & Growth"),
         ]
 
         for cat_key, cat_name in categories:
@@ -182,7 +199,9 @@ class ProgressVisualizer:
                 score = cat_data.get("score", 0)
                 max_score = cat_data.get("max_score", 0)
 
-                line = ProgressVisualizer.create_score_display(cat_name, score, max_score, 30)
+                line = ProgressVisualizer.create_score_display(
+                    cat_name, score, max_score, 30
+                )
                 lines.append(line)
 
         lines.append("")
@@ -207,9 +226,12 @@ class ProgressVisualizer:
             ("Total Sessions", profile_data.get("total_sessions", 0)),
             ("Total Messages", profile_data.get("total_messages", 0)),
             ("Total Tokens", f"{profile_data.get('total_tokens', 0):,}"),
-            ("Avg Tokens/Session", f"{profile_data.get('avg_tokens_per_session', 0):,.0f}"),
+            (
+                "Avg Tokens/Session",
+                f"{profile_data.get('avg_tokens_per_session', 0):,.0f}",
+            ),
             ("Current Rank", profile_data.get("current_rank", "Unknown")),
-            ("Achievements Earned", len(profile_data.get("achievements", [])))
+            ("Achievements Earned", len(profile_data.get("achievements", []))),
         ]
 
         for label, value in stats:
@@ -234,7 +256,9 @@ class ProgressVisualizer:
         lines = []
         lines.append("Leaderboard Position:")
         lines.append("-" * 70)
-        lines.append(f"  Company-wide: #{rank} of {total} (top {100-percentile:.0f}%)")
+        lines.append(
+            f"  Company-wide: #{rank} of {total} (top {100 - percentile:.0f}%)"
+        )
 
         # Visual indicator
         if percentile >= 90:

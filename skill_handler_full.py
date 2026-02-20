@@ -8,7 +8,7 @@ Supports v3.0 gamification with difficulty scaling, streaks, achievements, and r
 import json
 import sys
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 # Add token_craft to path
 sys.path.insert(0, str(Path(__file__).parent))
@@ -80,7 +80,13 @@ class TokenCraftHandlerFull:
 
         return history_data, stats_data
 
-    def calculate_scores(self, history_data: list, stats_data: Dict, previous_snapshot: Optional[Dict] = None, user_rank: int = 1) -> Dict:
+    def calculate_scores(
+        self,
+        history_data: list,
+        stats_data: Dict,
+        previous_snapshot: Optional[Dict] = None,
+        user_rank: int = 1,
+    ) -> Dict:
         """
         Calculate user scores using v3.0 system.
 
@@ -93,7 +99,12 @@ class TokenCraftHandlerFull:
         Returns:
             Score data with v3.0 metrics
         """
-        scorer = TokenCraftScorer(history_data, stats_data, user_rank=user_rank, user_profile=self.profile.get_current_state())
+        scorer = TokenCraftScorer(
+            history_data,
+            stats_data,
+            rank=user_rank,
+            user_profile=self.profile.get_current_state(),
+        )
         score_data = scorer.calculate_total_score(previous_snapshot)
         return score_data
 
@@ -109,7 +120,9 @@ class TokenCraftHandlerFull:
             history_data, stats_data = self.load_data()
 
             if not history_data:
-                print("No history data found. Start using Claude Code to track your progress!")
+                print(
+                    "No history data found. Start using Claude Code to track your progress!"
+                )
                 return False
 
             # Get previous snapshot
@@ -120,21 +133,22 @@ class TokenCraftHandlerFull:
             if previous_snapshot and isinstance(previous_snapshot, dict):
                 previous_profile = previous_snapshot.get("profile")
 
-            previous_score = previous_profile.get("total_score", 0) if previous_profile else 0
+            previous_score = (
+                previous_profile.get("total_score", 0) if previous_profile else 0
+            )
             previous_rank_data = SpaceRankSystem.get_rank(previous_score)
             current_rank = previous_rank_data.get("rank", 1)
 
             # Calculate scores with v3.0 difficulty scaling
             print("Calculating your scores (v3.0 with difficulty scaling)...")
             self.current_score_data = self.calculate_scores(
-                history_data,
-                stats_data,
-                previous_profile,
-                user_rank=current_rank
+                history_data, stats_data, previous_profile, user_rank=current_rank
             )
 
             # Get new rank based on v3.0 score
-            self.current_rank_data = SpaceRankSystem.get_rank(self.current_score_data["total_score"])
+            self.current_rank_data = SpaceRankSystem.get_rank(
+                self.current_score_data["total_score"]
+            )
 
             # Calculate delta
             delta_data = None
@@ -143,23 +157,30 @@ class TokenCraftHandlerFull:
                     "timestamp": self.current_score_data["calculated_at"],
                     "profile": self.profile.get_current_state(),
                     "scores": self.current_score_data,
-                    "rank": self.current_rank_data
+                    "rank": self.current_rank_data,
                 }
-                delta_data = DeltaCalculator.calculate_delta(current_snapshot, previous_snapshot)
+                delta_data = DeltaCalculator.calculate_delta(
+                    current_snapshot, previous_snapshot
+                )
 
             # Update profile
-            self.profile.update_from_analysis(self.current_score_data, self.current_rank_data)
+            self.profile.update_from_analysis(
+                self.current_score_data, self.current_rank_data
+            )
 
             # Check achievements
-            self._check_achievements(self.current_score_data, self.current_rank_data, delta_data)
+            self._check_achievements(
+                self.current_score_data, self.current_rank_data, delta_data
+            )
 
             # Sync with hero.epam.com
             self._sync_hero_badges()
 
             # Generate recommendations
-            self.current_recommendations = self.recommendation_engine.generate_recommendations(
-                self.current_score_data,
-                self.profile.get_current_state()
+            self.current_recommendations = (
+                self.recommendation_engine.generate_recommendations(
+                    self.current_score_data, self.profile.get_current_state()
+                )
             )
 
             # Save profile and snapshot
@@ -168,20 +189,21 @@ class TokenCraftHandlerFull:
             self.snapshot_manager.create_snapshot(
                 self.profile.get_current_state(),
                 self.current_score_data,
-                self.current_rank_data
+                self.current_rank_data,
             )
 
             return True
 
         except Exception as e:
             import traceback
+
             print(f"Error running analysis: {e}")
             print(traceback.format_exc())
             return False
 
-    def show_full_report(self):
+    def show_full_report(self) -> None:
         """Show full report."""
-        if not self.current_score_data:
+        if not self.current_score_data or not self.current_rank_data:
             print("No analysis data available. Run analysis first.")
             return
 
@@ -193,15 +215,17 @@ class TokenCraftHandlerFull:
                 "timestamp": self.current_score_data["calculated_at"],
                 "profile": self.profile.get_current_state(),
                 "scores": self.current_score_data,
-                "rank": self.current_rank_data
+                "rank": self.current_rank_data,
             }
-            delta_data = DeltaCalculator.calculate_delta(current_snapshot, previous_snapshot)
+            delta_data = DeltaCalculator.calculate_delta(
+                current_snapshot, previous_snapshot
+            )
 
         report = self.report_generator.generate_full_report(
             self.profile.get_current_state(),
             self.current_score_data,
             self.current_rank_data,
-            delta_data
+            delta_data,
         )
 
         print(report)
@@ -255,7 +279,9 @@ class TokenCraftHandlerFull:
         print("=" * 70)
 
         for rec_id in selected_ids:
-            rec = next((r for r in self.current_recommendations if r["id"] == rec_id), None)
+            rec = next(
+                (r for r in self.current_recommendations if r["id"] == rec_id), None
+            )
             if not rec:
                 continue
 
@@ -349,7 +375,10 @@ class TokenCraftHandlerFull:
         try:
             if memory_md_path.exists():
                 content = memory_md_path.read_text()
-                if "concise" not in content.lower() or "response style" not in content.lower():
+                if (
+                    "concise" not in content.lower()
+                    or "response style" not in content.lower()
+                ):
                     with open(memory_md_path, "a", encoding="utf-8") as f:
                         f.write(rule)
                     print("   ✓ Added to Memory.md")
@@ -363,8 +392,12 @@ class TokenCraftHandlerFull:
         except Exception as e:
             print(f"   ✗ Error updating Memory.md: {e}")
 
-    def _handle_export_stats(self):
+    def _handle_export_stats(self) -> None:
         """Handle team stats export."""
+        if not self.current_score_data or not self.current_rank_data:
+            print("\nNo analysis data available. Run analysis first.")
+            return
+
         config = self.menu.show_export_menu()
 
         print("\nExporting your stats...")
@@ -375,7 +408,7 @@ class TokenCraftHandlerFull:
                 self.profile.get_current_state(),
                 self.current_score_data,
                 self.current_rank_data,
-                config.get("department", "Engineering")
+                config.get("department", "Engineering"),
             )
 
             print(f"\n✓ Stats exported successfully!")
@@ -408,23 +441,30 @@ class TokenCraftHandlerFull:
         """Show company-wide leaderboard."""
         print("\nLoading company leaderboard...")
 
-        leaderboard = self.leaderboard_generator.generate_company_leaderboard(anonymous=True)
+        leaderboard = self.leaderboard_generator.generate_company_leaderboard(
+            anonymous=True
+        )
 
         if leaderboard["total_participants"] == 0:
             print("\nNo team data available yet.")
-            print("Export your stats and have team members do the same to build the leaderboard.")
+            print(
+                "Export your stats and have team members do the same to build the leaderboard."
+            )
         else:
             formatted = self.leaderboard_generator.format_leaderboard(leaderboard)
             print(formatted)
 
             # Show user's position
             user_email = self.profile.get_current_state().get("user_email")
-            your_rank = self.leaderboard_generator.find_your_rank(user_email)
+            if user_email:
+                your_rank = self.leaderboard_generator.find_your_rank(user_email)
 
-            if your_rank:
-                print(f"\nYour Position:")
-                print(f"  Rank: #{your_rank['rank']} of {your_rank['total_participants']}")
-                print(f"  Percentile: Top {100 - your_rank['percentile']:.0f}%")
+                if your_rank:
+                    print(f"\nYour Position:")
+                    print(
+                        f"  Rank: #{your_rank['rank']} of {your_rank['total_participants']}"
+                    )
+                    print(f"  Percentile: Top {100 - your_rank['percentile']:.0f}%")
 
         self.menu.wait_for_enter()
 
@@ -437,7 +477,9 @@ class TokenCraftHandlerFull:
             return
 
         print(f"\nLoading leaderboard for {project_name}...")
-        leaderboard = self.leaderboard_generator.generate_project_leaderboard(project_name)
+        leaderboard = self.leaderboard_generator.generate_project_leaderboard(
+            project_name
+        )
 
         formatted = self.leaderboard_generator.format_leaderboard(leaderboard)
         print(formatted)
@@ -450,7 +492,9 @@ class TokenCraftHandlerFull:
         department = department if department else "Engineering"
 
         print(f"\nLoading {department} leaderboard...")
-        leaderboard = self.leaderboard_generator.generate_department_leaderboard(department)
+        leaderboard = self.leaderboard_generator.generate_department_leaderboard(
+            department
+        )
 
         formatted = self.leaderboard_generator.format_leaderboard(leaderboard)
         print(formatted)
@@ -472,36 +516,71 @@ class TokenCraftHandlerFull:
         self.menu.show_recommendations_detailed(self.current_recommendations)
         self.menu.wait_for_enter()
 
-    def _check_achievements(self, score_data: Dict, rank_data: Dict, delta_data: Optional[Dict]):
+    def _check_achievements(
+        self, score_data: Dict, rank_data: Dict, delta_data: Optional[Dict]
+    ):
         """Check and award achievements."""
         # Existing achievements from basic handler
-        if rank_data["name"] == "Pilot" and not any(a["id"] == "first_pilot" for a in self.profile.get_achievements()):
-            self.profile.add_achievement("first_pilot", "First Pilot", "Achieved Pilot rank for the first time")
+        if rank_data["name"] == "Pilot" and not any(
+            a["id"] == "first_pilot" for a in self.profile.get_achievements()
+        ):
+            self.profile.add_achievement(
+                "first_pilot", "First Pilot", "Achieved Pilot rank for the first time"
+            )
 
         score = score_data["total_score"]
-        if score >= 500 and not any(a["id"] == "halfway_there" for a in self.profile.get_achievements()):
-            self.profile.add_achievement("halfway_there", "Halfway There", "Reached 500 points")
+        if score >= 500 and not any(
+            a["id"] == "halfway_there" for a in self.profile.get_achievements()
+        ):
+            self.profile.add_achievement(
+                "halfway_there", "Halfway There", "Reached 500 points"
+            )
 
-        if score >= 1000 and not any(a["id"] == "four_digits" for a in self.profile.get_achievements()):
-            self.profile.add_achievement("four_digits", "Four Digits", "Reached 1000+ points (Admiral level)")
+        if score >= 1000 and not any(
+            a["id"] == "four_digits" for a in self.profile.get_achievements()
+        ):
+            self.profile.add_achievement(
+                "four_digits", "Four Digits", "Reached 1000+ points (Admiral level)"
+            )
 
-        efficiency_pct = score_data["breakdown"]["token_efficiency"].get("improvement_pct", 0)
-        if efficiency_pct >= 30 and not any(a["id"] == "efficiency_master" for a in self.profile.get_achievements()):
-            self.profile.add_achievement("efficiency_master", "Efficiency Master", "Achieved 30%+ better efficiency than baseline")
+        efficiency_pct = score_data["breakdown"]["token_efficiency"].get(
+            "improvement_pct", 0
+        )
+        if efficiency_pct >= 30 and not any(
+            a["id"] == "efficiency_master" for a in self.profile.get_achievements()
+        ):
+            self.profile.add_achievement(
+                "efficiency_master",
+                "Efficiency Master",
+                "Achieved 30%+ better efficiency than baseline",
+            )
 
         if delta_data and isinstance(delta_data, dict):
             rank_change = delta_data.get("rank_change")
-            if rank_change and isinstance(rank_change, dict) and rank_change.get("promoted"):
+            if (
+                rank_change
+                and isinstance(rank_change, dict)
+                and rank_change.get("promoted")
+            ):
                 promo_id = f"promoted_to_{rank_data['name'].lower()}"
-                if not any(a["id"] == promo_id for a in self.profile.get_achievements()):
-                    self.profile.add_achievement(promo_id, f"Promoted to {rank_data['name']}", f"Achieved {rank_data['name']} rank")
+                if not any(
+                    a["id"] == promo_id for a in self.profile.get_achievements()
+                ):
+                    self.profile.add_achievement(
+                        promo_id,
+                        f"Promoted to {rank_data['name']}",
+                        f"Achieved {rank_data['name']} rank",
+                    )
 
-    def _sync_hero_badges(self):
+    def _sync_hero_badges(self) -> None:
         """Sync badges with hero.epam.com."""
         if not self.current_rank_data:
             return
 
         user_email = self.profile.get_current_state().get("user_email")
+        if not user_email:
+            return
+
         current_rank = self.current_rank_data["name"]
 
         # Sync badges (mock for now)
@@ -517,8 +596,12 @@ def main():
 
     # Fix Windows CMD encoding
     if sys.platform == "win32":
-        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+        sys.stdout = io.TextIOWrapper(
+            sys.stdout.buffer, encoding="utf-8", errors="replace"
+        )
+        sys.stderr = io.TextIOWrapper(
+            sys.stderr.buffer, encoding="utf-8", errors="replace"
+        )
 
     # Always run in interactive mode
     handler = TokenCraftHandlerFull()

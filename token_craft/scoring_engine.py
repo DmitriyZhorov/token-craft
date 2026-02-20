@@ -48,25 +48,25 @@ class TokenCraftScorer:
     # Self-Sufficiency (200 pts) removed - duplicate of direct_commands check
     # Warm-up bonuses removed - no participation trophies
     WEIGHTS = {
-        "token_efficiency": 250,         # 10.9% base
-        "optimization_adoption": 400,    # 17.4% (absorbed Self-Sufficiency)
-        "improvement_trend": 125,        # 5.4%
-        "waste_awareness": 100,          # 4.3%
-        "cache_effectiveness": 75,       # 3.3% (linear scale, not binary)
-        "tool_efficiency": 75,           # 3.3%
-        "cost_efficiency": 75,           # 3.3%
-        "session_focus": 75,             # 3.3% (expanded from 50)
-        "learning_growth": 75,           # 3.3% (no auto-bonus)
-        "best_practices": 50,            # 2.2%
-        "bonus_pool": 1000,              # 43.5% (combines streak, combo, achievements, rank bonuses)
+        "token_efficiency": 250,  # 10.9% base
+        "optimization_adoption": 400,  # 17.4% (absorbed Self-Sufficiency)
+        "improvement_trend": 125,  # 5.4%
+        "waste_awareness": 100,  # 4.3%
+        "cache_effectiveness": 75,  # 3.3% (linear scale, not binary)
+        "tool_efficiency": 75,  # 3.3%
+        "cost_efficiency": 75,  # 3.3%
+        "session_focus": 75,  # 3.3% (expanded from 50)
+        "learning_growth": 75,  # 3.3% (no auto-bonus)
+        "best_practices": 50,  # 2.2%
+        "bonus_pool": 1000,  # 43.5% (combines streak, combo, achievements, rank bonuses)
     }
 
     # Bonus systems weights (additional to base scoring) - kept for compatibility
     BONUS_WEIGHTS = {
-        "streak_multiplier": 75,         # Max +75 from 1.25x multiplier
-        "combo_bonuses": 150,            # Max +150 from MASTERY combo
-        "achievement_rewards": 200,      # 25+ achievements worth 20-200 pts each
-        "rank_prestige": 150,            # Bonus at rank milestones
+        "streak_multiplier": 75,  # Max +75 from 1.25x multiplier
+        "combo_bonuses": 150,  # Max +150 from MASTERY combo
+        "achievement_rewards": 200,  # 25+ achievements worth 20-200 pts each
+        "rank_prestige": 150,  # Bonus at rank milestones
     }
 
     # Total max achievable: 2300 (base) + 575 (bonuses) = 2875 theoretical
@@ -78,7 +78,7 @@ class TokenCraftScorer:
         "tokens_per_session": 30000,  # Realistic for coding sessions
         "tokens_per_message": 1500,
         "self_sufficiency_rate": 0.40,
-        "optimization_adoption_rate": 0.30
+        "optimization_adoption_rate": 0.30,
     }
 
     def __init__(
@@ -109,7 +109,9 @@ class TokenCraftScorer:
         self.difficulty = DifficultyModifier.get_difficulty(rank)
         self.streak_system = StreakSystem(user_profile)
         self.achievement_engine = AchievementEngine(user_profile)
-        self.regression_detector = RegressionDetector()  # Phase 10: Regression detection
+        self.regression_detector = (
+            RegressionDetector()
+        )  # Phase 10: Regression detection
 
         # Parse and prepare data
         self._prepare_data()
@@ -133,7 +135,9 @@ class TokenCraftScorer:
 
         # Calculate tokens
         self.total_tokens = self._calculate_total_tokens()
-        self.avg_tokens_per_session = self.total_tokens / self.total_sessions if self.total_sessions > 0 else 0
+        self.avg_tokens_per_session = (
+            self.total_tokens / self.total_sessions if self.total_sessions > 0 else 0
+        )
 
         # Calculate dynamic baseline
         self.dynamic_baseline = self._calculate_dynamic_baseline()
@@ -150,7 +154,7 @@ class TokenCraftScorer:
                     "session_id": session_id,
                     "messages": [],
                     "project": entry.get("project", "unknown"),
-                    "timestamp": entry.get("timestamp")
+                    "timestamp": entry.get("timestamp"),
                 }
 
             sessions[session_id]["messages"].append(entry)
@@ -202,7 +206,9 @@ class TokenCraftScorer:
             # Estimate: distribute total tokens proportionally by message count
             if self.total_messages > 0:
                 session_msg_count = len(session["messages"])
-                estimated_tokens = (session_msg_count / self.total_messages) * self.total_tokens
+                estimated_tokens = (
+                    session_msg_count / self.total_messages
+                ) * self.total_tokens
                 session_tokens.append(estimated_tokens)
 
         if not session_tokens:
@@ -272,8 +278,8 @@ class TokenCraftScorer:
                 "details": {
                     "total_sessions": self.total_sessions,
                     "total_tokens": self.total_tokens,
-                    "avg_tokens_per_session": round(user_avg, 0)
-                }
+                    "avg_tokens_per_session": round(user_avg, 0),
+                },
             }
 
         # Calculate ratio
@@ -298,8 +304,10 @@ class TokenCraftScorer:
                 base_score = 0
 
         # Apply difficulty multiplier (higher ranks have tighter curves)
-        difficulty_adjusted_score = DifficultyModifier.apply_token_efficiency_difficulty(
-            base_score, ratio, self.user_rank
+        difficulty_adjusted_score = (
+            DifficultyModifier.apply_token_efficiency_difficulty(
+                base_score, ratio, self.user_rank
+            )
         )
 
         # Determine tier for display
@@ -326,17 +334,21 @@ class TokenCraftScorer:
             "baseline_type": "dynamic" if using_dynamic else "fixed",
             "ratio": round(ratio, 2),
             "efficiency_ratio": round(user_avg, 0),  # For regression detection
-            "personal_best_efficiency": self.user_profile.get("personal_best_efficiency", round(user_avg, 0)),
+            "personal_best_efficiency": self.user_profile.get(
+                "personal_best_efficiency", round(user_avg, 0)
+            ),
             "tier": tier,
             "improvement_pct": round(improvement_pct, 1),
             "difficulty_rank": self.user_rank,
             "base_score_before_difficulty": round(base_score, 1),
-            "difficulty_multiplier": round(DifficultyModifier.RANK_BASELINES[self.user_rank]["multiplier"], 2),
+            "difficulty_multiplier": round(
+                DifficultyModifier.RANK_BASELINES[self.user_rank]["multiplier"], 2
+            ),
             "details": {
                 "total_sessions": self.total_sessions,
                 "total_tokens": self.total_tokens,
-                "avg_tokens_per_session": round(user_avg, 0)
-            }
+                "avg_tokens_per_session": round(user_avg, 0),
+            },
         }
 
     def calculate_optimization_adoption_score(self) -> Dict:
@@ -402,8 +414,10 @@ class TokenCraftScorer:
         return {
             "score": round(total_score, 1),
             "max_score": self.WEIGHTS["optimization_adoption"],
-            "percentage": round((total_score / self.WEIGHTS["optimization_adoption"]) * 100, 1),
-            "breakdown": scores
+            "percentage": round(
+                (total_score / self.WEIGHTS["optimization_adoption"]) * 100, 1
+            ),
+            "breakdown": scores,
         }
 
     def _check_defer_documentation(self) -> Dict:
@@ -441,7 +455,7 @@ class TokenCraftScorer:
             "max_score": 50,
             "consistency": round(consistency * 100, 1),
             "opportunities": doc_sessions,
-            "used": deferred_sessions
+            "used": deferred_sessions,
         }
 
     def _check_claude_md_usage(self) -> Dict:
@@ -452,7 +466,9 @@ class TokenCraftScorer:
             project = session["project"]
             project_counts[project] = project_counts.get(project, 0) + 1
 
-        top_projects = sorted(project_counts.items(), key=lambda x: x[1], reverse=True)[:3]
+        top_projects = sorted(project_counts.items(), key=lambda x: x[1], reverse=True)[
+            :3
+        ]
 
         # Check for CLAUDE.md in each project
         projects_with_claude_md = 0
@@ -469,7 +485,7 @@ class TokenCraftScorer:
             "max_score": 50,
             "consistency": round(consistency * 100, 1),
             "top_projects": len(top_projects),
-            "with_claude_md": projects_with_claude_md
+            "with_claude_md": projects_with_claude_md,
         }
 
     def _check_concise_mode(self) -> Dict:
@@ -485,11 +501,14 @@ class TokenCraftScorer:
 
         # Also check average message length
         if self.total_messages > 0:
-            avg_msg_length = sum(
-                len(msg.get("message", ""))
-                for session in self.sessions
-                for msg in session["messages"]
-            ) / self.total_messages
+            avg_msg_length = (
+                sum(
+                    len(msg.get("message", ""))
+                    for session in self.sessions
+                    for msg in session["messages"]
+                )
+                / self.total_messages
+            )
 
             # If average message is under 200 chars, consider concise
             if avg_msg_length < 200:
@@ -502,7 +521,7 @@ class TokenCraftScorer:
             "score": score,
             "max_score": 40,
             "consistency": round(consistency * 100, 1),
-            "preference_set": has_concise_preference
+            "preference_set": has_concise_preference,
         }
 
     def _check_direct_commands(self) -> Dict:
@@ -516,16 +535,27 @@ class TokenCraftScorer:
             for msg in session["messages"]:
                 # Check if AI was asked to run simple commands
                 content = msg.get("message", "").lower()
-                simple_cmds = ["git log", "git status", "cat ", "ls ", "grep ", "show me"]
+                simple_cmds = [
+                    "git log",
+                    "git status",
+                    "cat ",
+                    "ls ",
+                    "grep ",
+                    "show me",
+                ]
 
                 if any(cmd in content for cmd in simple_cmds):
                     ai_command_count += 1
 
         # Estimate opportunities (rough heuristic)
-        total_opportunities = self.total_sessions * 2  # Assume 2 opportunities per session
+        total_opportunities = (
+            self.total_sessions * 2
+        )  # Assume 2 opportunities per session
         direct_commands = max(0, total_opportunities - ai_command_count)
 
-        consistency = direct_commands / total_opportunities if total_opportunities > 0 else 0.5
+        consistency = (
+            direct_commands / total_opportunities if total_opportunities > 0 else 0.5
+        )
         score = self._calculate_tier_score(consistency, max_points=60)
 
         return {
@@ -534,7 +564,7 @@ class TokenCraftScorer:
             "consistency": round(consistency * 100, 1),
             "opportunities": total_opportunities,
             "direct_commands": direct_commands,
-            "ai_commands": ai_command_count
+            "ai_commands": ai_command_count,
         }
 
     def _check_context_management(self) -> Dict:
@@ -562,7 +592,7 @@ class TokenCraftScorer:
             "score": score,
             "max_score": 50,
             "consistency": round(consistency * 100, 1),
-            "avg_messages_per_session": round(avg_messages_per_session, 1)
+            "avg_messages_per_session": round(avg_messages_per_session, 1),
         }
 
     def _check_xml_usage(self) -> Dict:
@@ -572,7 +602,15 @@ class TokenCraftScorer:
         Anthropic recommends structuring prompts with XML tags like:
         <document>, <task>, <context>, <example>, etc.
         """
-        xml_keywords = ["<document>", "<task>", "<context>", "<example>", "<input>", "<output>", "</"]
+        xml_keywords = [
+            "<document>",
+            "<task>",
+            "<context>",
+            "<example>",
+            "<input>",
+            "<output>",
+            "</",
+        ]
 
         xml_sessions = 0
         for session in self.sessions:
@@ -582,7 +620,9 @@ class TokenCraftScorer:
                     xml_sessions += 1
                     break  # Count session once
 
-        consistency = xml_sessions / self.total_sessions if self.total_sessions > 0 else 0
+        consistency = (
+            xml_sessions / self.total_sessions if self.total_sessions > 0 else 0
+        )
         score = self._calculate_tier_score(consistency, max_points=20)
 
         return {
@@ -591,7 +631,7 @@ class TokenCraftScorer:
             "consistency": round(consistency * 100, 1),
             "sessions_with_xml": xml_sessions,
             "total_sessions": self.total_sessions,
-            "benefit": "XML tags improve prompt structure and clarity"
+            "benefit": "XML tags improve prompt structure and clarity",
         }
 
     def _check_chain_of_thought(self) -> Dict:
@@ -601,7 +641,16 @@ class TokenCraftScorer:
         Anthropic recommends using CoT prompts like:
         "let's think step by step", "reasoning:", "because", etc.
         """
-        cot_keywords = ["let's think", "step by step", "reasoning:", "because", "first", "then", "therefore", "analyze"]
+        cot_keywords = [
+            "let's think",
+            "step by step",
+            "reasoning:",
+            "because",
+            "first",
+            "then",
+            "therefore",
+            "analyze",
+        ]
 
         cot_sessions = 0
         for session in self.sessions:
@@ -611,7 +660,9 @@ class TokenCraftScorer:
                     cot_sessions += 1
                     break  # Count session once
 
-        consistency = cot_sessions / self.total_sessions if self.total_sessions > 0 else 0
+        consistency = (
+            cot_sessions / self.total_sessions if self.total_sessions > 0 else 0
+        )
         score = self._calculate_tier_score(consistency, max_points=30)
 
         return {
@@ -620,7 +671,7 @@ class TokenCraftScorer:
             "consistency": round(consistency * 100, 1),
             "sessions_with_cot": cot_sessions,
             "total_sessions": self.total_sessions,
-            "benefit": "Chain of Thought improves reasoning quality and accuracy"
+            "benefit": "Chain of Thought improves reasoning quality and accuracy",
         }
 
     def _check_examples_usage(self) -> Dict:
@@ -630,7 +681,14 @@ class TokenCraftScorer:
         Anthropic recommends providing examples like:
         "for example", "e.g.", "such as", "like this:", etc.
         """
-        example_keywords = ["for example", "e.g.", "such as", "like this:", "here's an example", "example:"]
+        example_keywords = [
+            "for example",
+            "e.g.",
+            "such as",
+            "like this:",
+            "here's an example",
+            "example:",
+        ]
 
         example_sessions = 0
         for session in self.sessions:
@@ -640,7 +698,9 @@ class TokenCraftScorer:
                     example_sessions += 1
                     break  # Count session once
 
-        consistency = example_sessions / self.total_sessions if self.total_sessions > 0 else 0
+        consistency = (
+            example_sessions / self.total_sessions if self.total_sessions > 0 else 0
+        )
         score = self._calculate_tier_score(consistency, max_points=25)
 
         return {
@@ -649,7 +709,7 @@ class TokenCraftScorer:
             "consistency": round(consistency * 100, 1),
             "sessions_with_examples": example_sessions,
             "total_sessions": self.total_sessions,
-            "benefit": "Examples improve output quality and reduce iterations"
+            "benefit": "Examples improve output quality and reduce iterations",
         }
 
     def _calculate_tier_score(self, consistency: float, max_points: int) -> float:
@@ -685,7 +745,9 @@ class TokenCraftScorer:
             # Poor - linear from 0 to 40%
             return max_points * (consistency / 0.30) * 0.40
 
-    def calculate_improvement_trend_score(self, previous_snapshot: Optional[Dict] = None) -> Dict:
+    def calculate_improvement_trend_score(
+        self, previous_snapshot: Optional[Dict] = None
+    ) -> Dict:
         """
         Calculate Improvement Trend score (12.5%, 125 points max).
 
@@ -706,7 +768,7 @@ class TokenCraftScorer:
                 "percentage": 40.0,
                 "improvement_pct": 0,
                 "status": "warming_up",
-                "message": f"Session {self.total_sessions}/10 - Establishing baseline"
+                "message": f"Session {self.total_sessions}/10 - Establishing baseline",
             }
 
         if not previous_snapshot:
@@ -717,11 +779,13 @@ class TokenCraftScorer:
                 "percentage": 40.0,
                 "improvement_pct": 0,
                 "status": "baseline",
-                "message": "No previous snapshot for comparison"
+                "message": "No previous snapshot for comparison",
             }
 
         # Compare token efficiency
-        prev_avg = previous_snapshot.get("avg_tokens_per_session", self.baseline["tokens_per_session"])
+        prev_avg = previous_snapshot.get(
+            "avg_tokens_per_session", self.baseline["tokens_per_session"]
+        )
         current_avg = self.avg_tokens_per_session
 
         if prev_avg == 0:
@@ -756,7 +820,7 @@ class TokenCraftScorer:
             "improvement_pct": round(improvement_pct, 1),
             "status": status,
             "prev_avg": round(prev_avg, 0),
-            "current_avg": round(current_avg, 0)
+            "current_avg": round(current_avg, 0),
         }
 
     def calculate_best_practices_score(self) -> Dict:
@@ -776,12 +840,14 @@ class TokenCraftScorer:
 
         # 1. CLAUDE.md in top projects
         claude_md_data = self._check_claude_md_usage()
-        claude_md_score = (claude_md_data["with_claude_md"] / max(1, claude_md_data["top_projects"])) * 30
+        claude_md_score = (
+            claude_md_data["with_claude_md"] / max(1, claude_md_data["top_projects"])
+        ) * 30
         checks["claude_md_setup"] = {
             "score": round(claude_md_score, 1),
             "max_score": 30,
             "projects_with_setup": claude_md_data["with_claude_md"],
-            "top_projects": claude_md_data["top_projects"]
+            "top_projects": claude_md_data["top_projects"],
         }
         total_score += claude_md_score
 
@@ -799,24 +865,22 @@ class TokenCraftScorer:
         checks["memory_md_optimizations"] = {
             "score": memory_score,
             "max_score": 10,
-            "has_optimizations": has_optimizations
+            "has_optimizations": has_optimizations,
         }
         total_score += memory_score
 
         # 3. Appropriate tooling
         # Give 10 points as baseline (assumes using token-craft tool)
-        checks["tooling"] = {
-            "score": 10,
-            "max_score": 10,
-            "using_token_craft": True
-        }
+        checks["tooling"] = {"score": 10, "max_score": 10, "using_token_craft": True}
         total_score += 10
 
         return {
             "score": round(total_score, 1),
             "max_score": self.WEIGHTS["best_practices"],
-            "percentage": round((total_score / self.WEIGHTS["best_practices"]) * 100, 1),
-            "checks": checks
+            "percentage": round(
+                (total_score / self.WEIGHTS["best_practices"]) * 100, 1
+            ),
+            "checks": checks,
         }
 
     def calculate_cache_effectiveness_score(self) -> Dict:
@@ -842,7 +906,7 @@ class TokenCraftScorer:
                 "percentage": 0,
                 "cache_hit_rate": 0,
                 "target_hit_rate": self.difficulty["cache_hit_target"],
-                "message": "No cache data available"
+                "message": "No cache data available",
             }
 
         # Calculate total cache reads and regular inputs
@@ -898,8 +962,8 @@ class TokenCraftScorer:
             "difficulty_rank": self.user_rank,
             "details": {
                 "excellent": cache_hit_rate >= target + 20,
-                "using_cache": total_cache_reads > 0
-            }
+                "using_cache": total_cache_reads > 0,
+            },
         }
 
     def calculate_session_focus_score(self) -> Dict:
@@ -917,7 +981,7 @@ class TokenCraftScorer:
                 "max_score": self.WEIGHTS["session_focus"],
                 "percentage": 50.0,
                 "avg_messages_per_session": 0,
-                "message": "No sessions yet"
+                "message": "No sessions yet",
             }
 
         avg_messages = self.total_messages / self.total_sessions
@@ -930,7 +994,7 @@ class TokenCraftScorer:
         elif 1 <= avg_messages < 3 or 20 < avg_messages <= 30:
             score = 20  # Not ideal - too short or too long
         else:  # < 1 or > 30
-            score = 0   # Poor - way off
+            score = 0  # Poor - way off
 
         return {
             "score": score,
@@ -939,7 +1003,7 @@ class TokenCraftScorer:
             "avg_messages_per_session": round(avg_messages, 1),
             "total_messages": self.total_messages,
             "total_sessions": self.total_sessions,
-            "optimal": 5 <= avg_messages <= 15
+            "optimal": 5 <= avg_messages <= 15,
         }
 
     def calculate_tool_efficiency_score(self) -> Dict:
@@ -959,7 +1023,7 @@ class TokenCraftScorer:
                 "score": 37,
                 "max_score": self.WEIGHTS["tool_efficiency"],
                 "percentage": 50.0,
-                "message": "No history data available"
+                "message": "No history data available",
             }
 
         read_before_edit_count = 0
@@ -1038,6 +1102,7 @@ class TokenCraftScorer:
 
         # 2. Parallel tool usage (25 pts)
         total_tool_turns = parallel_call_count + single_call_count
+        parallel_pct = 0.0
         if total_tool_turns > 0:
             parallel_pct = (parallel_call_count / total_tool_turns) * 100
             if parallel_pct >= 40:
@@ -1055,6 +1120,7 @@ class TokenCraftScorer:
 
         # 3. Glob/Grep preference (20 pts)
         total_search = glob_grep_count + bash_find_grep_count
+        glob_pct = 0.0
         if total_search > 0:
             glob_pct = (glob_grep_count / total_search) * 100
             if glob_pct >= 90:
@@ -1075,24 +1141,26 @@ class TokenCraftScorer:
         return {
             "score": total_score,
             "max_score": self.WEIGHTS["tool_efficiency"],
-            "percentage": round((total_score / self.WEIGHTS["tool_efficiency"]) * 100, 1),
+            "percentage": round(
+                (total_score / self.WEIGHTS["tool_efficiency"]) * 100, 1
+            ),
             "read_before_edit": {
                 "compliant": read_before_edit_count,
                 "violations": edit_without_read_count,
-                "score": read_score
+                "score": read_score,
             },
             "parallel_usage": {
                 "parallel_turns": parallel_call_count,
                 "single_turns": single_call_count,
                 "percentage": round(parallel_pct if total_tool_turns > 0 else 0, 1),
-                "score": parallel_score
+                "score": parallel_score,
             },
             "glob_grep_preference": {
                 "glob_grep_count": glob_grep_count,
                 "bash_find_grep_count": bash_find_grep_count,
                 "percentage": round(glob_pct if total_search > 0 else 100, 1),
-                "score": glob_score
-            }
+                "score": glob_score,
+            },
         }
 
     def calculate_cost_efficiency_score(self) -> Dict:
@@ -1109,8 +1177,12 @@ class TokenCraftScorer:
         """
         # Calculate average cost per session
         # Model pricing: Sonnet 4.5 = $3/M input, $15/M output (avg ~$9/M)
-        avg_tokens_per_session = self.total_tokens / self.total_sessions if self.total_sessions > 0 else 0
-        avg_cost_per_session = (avg_tokens_per_session / 1_000_000) * 9.0  # $9 avg per million
+        avg_tokens_per_session = (
+            self.total_tokens / self.total_sessions if self.total_sessions > 0 else 0
+        )
+        avg_cost_per_session = (
+            avg_tokens_per_session / 1_000_000
+        ) * 9.0  # $9 avg per million
 
         # Baseline cost per session (30K tokens = $0.27)
         baseline_cost = 0.27
@@ -1131,8 +1203,12 @@ class TokenCraftScorer:
 
         # 2. Cache effectiveness contribution (20 pts)
         # Already measured in cache_effectiveness, just check if using cache
-        models_data = self.stats_data.get("models") or self.stats_data.get("modelUsage", {})
-        total_cache_reads = sum(data.get("cacheReadInputTokens", 0) for data in models_data.values())
+        models_data = self.stats_data.get("models") or self.stats_data.get(
+            "modelUsage", {}
+        )
+        total_cache_reads = sum(
+            data.get("cacheReadInputTokens", 0) for data in models_data.values()
+        )
 
         if total_cache_reads > 10000:  # Actively using cache
             cache_contribution = 20
@@ -1162,16 +1238,20 @@ class TokenCraftScorer:
         return {
             "score": total_score,
             "max_score": self.WEIGHTS["cost_efficiency"],
-            "percentage": round((total_score / self.WEIGHTS["cost_efficiency"]) * 100, 1),
+            "percentage": round(
+                (total_score / self.WEIGHTS["cost_efficiency"]) * 100, 1
+            ),
             "avg_cost_per_session": round(avg_cost_per_session, 4),
             "baseline_cost": baseline_cost,
-            "cost_ratio": round(avg_cost_per_session / baseline_cost, 2) if baseline_cost > 0 else 1.0,
+            "cost_ratio": round(avg_cost_per_session / baseline_cost, 2)
+            if baseline_cost > 0
+            else 1.0,
             "estimated_daily_cost": round(daily_cost_estimate, 2),
             "breakdown": {
                 "cost_vs_baseline": cost_score,
                 "cache_contribution": cache_contribution,
-                "budget_compliance": budget_score
-            }
+                "budget_compliance": budget_score,
+            },
         }
 
     def calculate_learning_growth_score(self) -> Dict:
@@ -1199,7 +1279,7 @@ class TokenCraftScorer:
                 "message": "Keep improving! Scores will increase with real efficiency gains.",
                 "sessions": self.total_sessions,
                 "note": "v3.0: No warm-up bonuses - earn points through actual improvement",
-                "details": "Warm-up bonus removed. Earn points through 5%+ efficiency improvement."
+                "details": "Warm-up bonus removed. Earn points through 5%+ efficiency improvement.",
             }
 
         # Split sessions into early (first 1/3) and recent (last 1/3)
@@ -1208,7 +1288,7 @@ class TokenCraftScorer:
                 "score": 25,
                 "max_score": self.WEIGHTS["learning_growth"],
                 "percentage": 50.0,
-                "message": "No history data available"
+                "message": "No history data available",
             }
 
         total_sessions = len(self.history_data)
@@ -1240,10 +1320,15 @@ class TokenCraftScorer:
                 recent_tokens.append(session_tokens)
 
         # 1. Efficiency improvement (25 pts)
+        early_avg = 0.0
+        recent_avg = 0.0
+        improvement = 0.0
         if early_tokens and recent_tokens:
             early_avg = statistics.mean(early_tokens)
             recent_avg = statistics.mean(recent_tokens)
-            improvement = ((early_avg - recent_avg) / early_avg) * 100 if early_avg > 0 else 0
+            improvement = (
+                ((early_avg - recent_avg) / early_avg) * 100 if early_avg > 0 else 0
+            )
 
             if improvement >= 20:  # 20%+ improvement
                 efficiency_score = 25
@@ -1266,7 +1351,9 @@ class TokenCraftScorer:
             if 5 <= message_count <= 15:
                 optimal_sessions += 1
 
-        consistency_pct = (optimal_sessions / len(recent_sessions)) * 100 if recent_sessions else 0
+        consistency_pct = (
+            (optimal_sessions / len(recent_sessions)) * 100 if recent_sessions else 0
+        )
 
         if consistency_pct >= 70:
             consistency_score = 25
@@ -1304,16 +1391,22 @@ class TokenCraftScorer:
         return {
             "score": total_score,
             "max_score": self.WEIGHTS["learning_growth"],
-            "percentage": round((total_score / self.WEIGHTS["learning_growth"]) * 100, 1),
-            "efficiency_improvement": round(improvement if 'improvement' in locals() else 0, 1),
+            "percentage": round(
+                (total_score / self.WEIGHTS["learning_growth"]) * 100, 1
+            ),
+            "efficiency_improvement": round(
+                improvement if "improvement" in locals() else 0, 1
+            ),
             "consistency_rate": round(consistency_pct, 1),
             "breakdown": {
                 "efficiency_improvement": efficiency_score,
                 "consistency": consistency_score,
-                "autonomy_growth": autonomy_score
+                "autonomy_growth": autonomy_score,
             },
-            "early_avg_tokens": round(early_avg, 0) if 'early_avg' in locals() else 0,
-            "recent_avg_tokens": round(recent_avg, 0) if 'recent_avg' in locals() else 0
+            "early_avg_tokens": round(early_avg, 0) if "early_avg" in locals() else 0,
+            "recent_avg_tokens": round(recent_avg, 0)
+            if "recent_avg" in locals()
+            else 0,
         }
 
     def calculate_waste_awareness_score(self) -> Dict:
@@ -1342,7 +1435,9 @@ class TokenCraftScorer:
         if message_lengths and len(message_lengths) > 10:
             # Calculate coefficient of variation
             mean_length = statistics.mean(message_lengths)
-            std_dev = statistics.stdev(message_lengths) if len(message_lengths) > 1 else 0
+            std_dev = (
+                statistics.stdev(message_lengths) if len(message_lengths) > 1 else 0
+            )
 
             # High variation (CV > 0.5) indicates attempts at varied prompt lengths
             cv = std_dev / mean_length if mean_length > 0 else 0
@@ -1401,8 +1496,8 @@ class TokenCraftScorer:
                 "varied_prompt_lengths": waste_signals > 0,
                 "efficiency_trend": waste_signals > 1,
                 "project_diversity": len(projects),
-                "total_projects": len(projects)
-            }
+                "total_projects": len(projects),
+            },
         }
 
     def calculate_total_score(self, previous_snapshot: Optional[Dict] = None) -> Dict:
@@ -1440,16 +1535,16 @@ class TokenCraftScorer:
 
         # Sum base scores
         base_total_score = (
-            token_efficiency["score"] +
-            optimization_adoption["score"] +
-            improvement_trend["score"] +
-            waste_awareness["score"] +
-            best_practices["score"] +
-            cache_effectiveness["score"] +
-            tool_efficiency["score"] +
-            cost_efficiency["score"] +
-            session_focus["score"] +
-            learning_growth["score"]
+            token_efficiency["score"]
+            + optimization_adoption["score"]
+            + improvement_trend["score"]
+            + waste_awareness["score"]
+            + best_practices["score"]
+            + cache_effectiveness["score"]
+            + tool_efficiency["score"]
+            + cost_efficiency["score"]
+            + session_focus["score"]
+            + learning_growth["score"]
         )
 
         # Calculate max possible (base weights only)
@@ -1483,7 +1578,9 @@ class TokenCraftScorer:
         # Check and unlock achievements
         newly_unlocked_achievements = []
         newly_unlocked_achievements.extend(
-            self.achievement_engine.check_progression_achievements(self.user_rank, score_after_combo)
+            self.achievement_engine.check_progression_achievements(
+                self.user_rank, score_after_combo
+            )
         )
         newly_unlocked_achievements.extend(
             self.achievement_engine.check_excellence_achievements(category_scores)
@@ -1493,8 +1590,12 @@ class TokenCraftScorer:
         final_score = score_after_combo + streak_bonus_points
 
         # Phase 10: Detect performance regression
-        current_efficiency = token_efficiency.get("efficiency_ratio", self.avg_tokens_per_session)
-        personal_best_efficiency = token_efficiency.get("personal_best_efficiency", current_efficiency)
+        current_efficiency = token_efficiency.get(
+            "efficiency_ratio", self.avg_tokens_per_session
+        )
+        personal_best_efficiency = token_efficiency.get(
+            "personal_best_efficiency", current_efficiency
+        )
 
         # If personal_best not provided, try to derive from recent scores (lower token count is better)
         if personal_best_efficiency == current_efficiency:
@@ -1518,7 +1619,7 @@ class TokenCraftScorer:
         time_adjusted = TimeBasedMechanics.apply_time_modifiers(
             final_score,
             datetime.now().isoformat(),
-            self.user_profile.get("last_updated")
+            self.user_profile.get("last_updated"),
         )
         time_adjusted_score = time_adjusted["adjusted_score"]
 
@@ -1550,13 +1651,18 @@ class TokenCraftScorer:
             },
             "time_modifiers": {
                 "recency_multiplier": round(time_adjusted["recency"]["multiplier"], 2),
-                "decay_multiplier": round(time_adjusted["decay"]["multiplier"] if time_adjusted["decay"] else 1.0, 2),
+                "decay_multiplier": round(
+                    time_adjusted["decay"]["multiplier"]
+                    if time_adjusted["decay"]
+                    else 1.0,
+                    2,
+                ),
                 "combined_multiplier": round(time_adjusted["combined_multiplier"], 2),
             },
             "achievements": {
                 "newly_unlocked": len(newly_unlocked_achievements),
                 "total_unlocked": len(self.achievement_engine.unlocked_achievements),
-            }
+            },
         }
 
         # Calculate percentages
@@ -1592,5 +1698,5 @@ class TokenCraftScorer:
                 "recommendation": regression_analysis.get("recommendation", ""),
             },
             "calculated_at": datetime.now().isoformat(),
-            "version": "3.0"
+            "version": "3.0",
         }

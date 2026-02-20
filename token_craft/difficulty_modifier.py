@@ -24,32 +24,36 @@ class DifficultyModifier:
         7: {"name": "Admiral", "tokens_per_session": 24000, "multiplier": 0.69},
         8: {"name": "Commodore", "tokens_per_session": 22000, "multiplier": 0.63},
         9: {"name": "Fleet Admiral", "tokens_per_session": 21000, "multiplier": 0.60},
-        10: {"name": "Galactic Legend", "tokens_per_session": 20000, "multiplier": 0.57},
+        10: {
+            "name": "Galactic Legend",
+            "tokens_per_session": 20000,
+            "multiplier": 0.57,
+        },
     }
 
     # Cache hit rate targets by rank (%)
     CACHE_HIT_TARGETS = {
-        1: 10,   # Cadet: 10% cache hits expected
-        2: 15,   # Navigator: 15%
-        3: 20,   # Pilot: 20%
-        4: 25,   # Explorer: 25%
-        5: 30,   # Captain: 30%
-        6: 35,   # Commander: 35%
-        7: 40,   # Admiral: 40%
-        8: 45,   # Commodore: 45%
-        9: 50,   # Fleet Admiral: 50%
+        1: 10,  # Cadet: 10% cache hits expected
+        2: 15,  # Navigator: 15%
+        3: 20,  # Pilot: 20%
+        4: 25,  # Explorer: 25%
+        5: 30,  # Captain: 30%
+        6: 35,  # Commander: 35%
+        7: 40,  # Admiral: 40%
+        8: 45,  # Commodore: 45%
+        9: 50,  # Fleet Admiral: 50%
         10: 55,  # Legend: 55%
     }
 
     # Optimization adoption thresholds by rank (%)
     OPTIMIZATION_THRESHOLDS = {
-        1: 0.30,   # Cadet: 30% adoption expected
+        1: 0.30,  # Cadet: 30% adoption expected
         2: 0.35,
         3: 0.40,
         4: 0.45,
-        5: 0.50,   # Captain: 50%
+        5: 0.50,  # Captain: 50%
         6: 0.55,
-        7: 0.60,   # Admiral: 60%
+        7: 0.60,  # Admiral: 60%
         8: 0.65,
         9: 0.70,
         10: 0.75,  # Legend: 75%
@@ -58,16 +62,16 @@ class DifficultyModifier:
     # Session focus (message clustering) targets by rank
     # Higher ranks need tighter focus (fewer, more productive messages)
     SESSION_FOCUS_TARGETS = {
-        1: (2, 15),     # Cadet: 2-15 messages per session
+        1: (2, 15),  # Cadet: 2-15 messages per session
         2: (2, 14),
         3: (2, 13),
         4: (2, 12),
-        5: (2, 11),     # Captain: 2-11 messages
+        5: (2, 11),  # Captain: 2-11 messages
         6: (2, 10),
-        7: (2, 9),      # Admiral: 2-9 messages
+        7: (2, 9),  # Admiral: 2-9 messages
         8: (2, 8),
         9: (2, 7),
-        10: (2, 6),     # Legend: 2-6 messages (extreme focus)
+        10: (2, 6),  # Legend: 2-6 messages (extreme focus)
     }
 
     @classmethod
@@ -90,7 +94,9 @@ class DifficultyModifier:
             "rank": rank,
             "rank_name": baseline_info["name"],
             "tokens_per_session": baseline_info["tokens_per_session"],
-            "token_efficiency_baseline": baseline_info["tokens_per_session"],  # Alias for compatibility
+            "token_efficiency_baseline": baseline_info[
+                "tokens_per_session"
+            ],  # Alias for compatibility
             "multiplier": baseline_info["multiplier"],
             "cache_hit_target": cls.CACHE_HIT_TARGETS.get(rank, 10),
             "optimization_threshold": cls.OPTIMIZATION_THRESHOLDS.get(rank, 0.30),
@@ -99,7 +105,11 @@ class DifficultyModifier:
 
     @classmethod
     def apply_token_efficiency_difficulty(
-        cls, base_score: float = None, score: float = None, user_ratio: float = 1.0, rank: int = 1
+        cls,
+        base_score: Optional[float] = None,
+        score: Optional[float] = None,
+        user_ratio: float = 1.0,
+        rank: int = 1,
     ) -> float:
         """
         Apply difficulty-based adjustment to token efficiency score.
@@ -137,7 +147,7 @@ class DifficultyModifier:
             return current_score * multiplier
         else:
             # More significant overage - apply stronger modifier
-            return current_score * (multiplier ** 1.5)
+            return current_score * (multiplier**1.5)
 
     @classmethod
     def apply_optimization_difficulty(
@@ -184,9 +194,13 @@ class DifficultyModifier:
             comparison[rank] = {
                 "rank_name": baseline_info["name"],
                 "tokens_baseline": baseline_info["tokens_per_session"],
-                "difficulty_increase_pct": round((1 - difficulty["multiplier"]) * 100, 1),
+                "difficulty_increase_pct": round(
+                    (1 - difficulty["multiplier"]) * 100, 1
+                ),
                 "cache_target": difficulty["cache_hit_target"],
-                "optimization_target": round(difficulty["optimization_threshold"] * 100, 1),
+                "optimization_target": round(
+                    difficulty["optimization_threshold"] * 100, 1
+                ),
             }
 
         return comparison

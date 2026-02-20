@@ -12,7 +12,7 @@ Gamification engine tracking 34 achievements across 8 categories:
 - Adaptability (New): Multi-tool and multi-model efficiency
 """
 
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 from datetime import datetime
 
 
@@ -58,8 +58,13 @@ class AchievementEngine:
     _ACHIEVEMENT_OBJECTS = [
         # Progression (5) - Rank milestones
         Achievement(
-            "rank_cadet", "Cadet", "Progression", "Start your journey", "Reach Cadet rank", 20,
-            "🎓"
+            "rank_cadet",
+            "Cadet",
+            "Progression",
+            "Start your journey",
+            "Reach Cadet rank",
+            20,
+            "🎓",
         ),
         Achievement(
             "rank_navigator",
@@ -201,8 +206,13 @@ class AchievementEngine:
         ),
         # Exploration (4) - Session milestones
         Achievement(
-            "explore_10", "First Flight", "Exploration", "10 sessions completed", "Reach 10 sessions",
-            25, "🚀"
+            "explore_10",
+            "First Flight",
+            "Exploration",
+            "10 sessions completed",
+            "Reach 10 sessions",
+            25,
+            "🚀",
         ),
         Achievement(
             "explore_50",
@@ -382,19 +392,23 @@ class AchievementEngine:
         """Convert Achievement objects to dicts with expected test field names."""
         achievements = []
         for ach in cls._ACHIEVEMENT_OBJECTS:
-            achievements.append({
-                "id": ach.achievement_id,
-                "title": ach.name,
-                "description": ach.description,
-                "category": ach.category.lower(),
-                "threshold": ach.requirement,
-                "points": ach.points,
-                "icon": ach.badge_icon,
-                "requirement": ach.requirement,
-            })
+            achievements.append(
+                {
+                    "id": ach.achievement_id,
+                    "title": ach.name,
+                    "description": ach.description,
+                    "category": ach.category.lower(),
+                    "threshold": ach.requirement,
+                    "points": ach.points,
+                    "icon": ach.badge_icon,
+                    "requirement": ach.requirement,
+                }
+            )
         return achievements
 
-    def __init__(self, user_profile: Optional[Dict] = None, profile: Optional[Dict] = None):
+    def __init__(
+        self, user_profile: Optional[Dict] = None, profile: Optional[Dict] = None
+    ):
         """Initialize achievement engine."""
         # Accept both 'user_profile' and 'profile' for backwards compatibility
         self.user_profile = user_profile or profile or {}
@@ -423,7 +437,9 @@ class AchievementEngine:
 
         return None
 
-    def unlock_achievement(self, achievement_id: str, timestamp: Optional[str] = None) -> Dict:
+    def unlock_achievement(
+        self, achievement_id: str, timestamp: Optional[str] = None
+    ) -> Dict:
         """
         Unlock an achievement.
 
@@ -456,7 +472,12 @@ class AchievementEngine:
             "timestamp": timestamp,
         }
 
-    def check_progression_achievements(self, rank=None, score=None, user_data=None) -> List[Dict]:
+    def check_progression_achievements(
+        self,
+        rank: Optional[int] = None,
+        score: Optional[int] = None,
+        user_data: Optional[Dict[str, Any]] = None,
+    ) -> List[Dict]:
         """
         Check and unlock progression achievements based on rank/score.
 
@@ -472,16 +493,26 @@ class AchievementEngine:
         if user_data is not None:
             # user_data is first positional arg if called with dict
             from .rank_system import SpaceRankSystem
-            rank_obj = SpaceRankSystem.get_rank_by_name(user_data.get("current_rank", "Cadet"))
+
+            rank_obj = SpaceRankSystem.get_rank_by_name(
+                user_data.get("current_rank", "Cadet")
+            )
             rank = rank_obj.get("number", 1) if rank_obj else 1
             score = user_data.get("current_score", 0)
         elif isinstance(rank, dict):
             # Handle case where first arg is a dict (called as check_progression_achievements(dict_arg))
             from .rank_system import SpaceRankSystem
-            rank_obj = SpaceRankSystem.get_rank_by_name(rank.get("current_rank", "Cadet"))
+
+            rank_obj = SpaceRankSystem.get_rank_by_name(
+                rank.get("current_rank", "Cadet")
+            )
             rank_int = rank_obj.get("number", 1) if rank_obj else 1
             score = rank.get("current_score", 0)
             rank = rank_int
+
+        # Ensure rank and score have default values if None
+        rank = rank if rank is not None else 1
+        score = score if score is not None else 0
 
         unlocked = []
 
@@ -541,7 +572,10 @@ class AchievementEngine:
         }
 
         for category, achievement_id in excellence_map.items():
-            if category in category_scores and achievement_id not in self.unlocked_achievements:
+            if (
+                category in category_scores
+                and achievement_id not in self.unlocked_achievements
+            ):
                 score = category_scores[category].get("score", 0)
                 max_score = category_scores[category].get("max_score", 1)
                 if max_score > 0 and (score / max_score) >= threshold:
@@ -556,7 +590,9 @@ class AchievementEngine:
         achievements = []
         for achievement in self._ACHIEVEMENT_OBJECTS:
             achievement_dict = achievement.to_dict()
-            achievement_dict["unlocked"] = achievement.achievement_id in self.unlocked_achievements
+            achievement_dict["unlocked"] = (
+                achievement.achievement_id in self.unlocked_achievements
+            )
             achievements.append(achievement_dict)
         return achievements
 
@@ -565,7 +601,8 @@ class AchievementEngine:
         unlocked_count = len(self.unlocked_achievements)
         total_count = len(self._ACHIEVEMENT_OBJECTS)
         total_points = sum(
-            ach.points for ach in self._ACHIEVEMENT_OBJECTS
+            ach.points
+            for ach in self._ACHIEVEMENT_OBJECTS
             if ach.achievement_id in self.unlocked_achievements
         )
 
@@ -574,7 +611,9 @@ class AchievementEngine:
             "total_count": total_count,
             "completion_pct": round((unlocked_count / total_count) * 100, 1),
             "total_points_earned": total_points,
-            "total_points_possible": sum(ach.points for ach in self._ACHIEVEMENT_OBJECTS),
+            "total_points_possible": sum(
+                ach.points for ach in self._ACHIEVEMENT_OBJECTS
+            ),
         }
 
     def to_dict(self) -> Dict:

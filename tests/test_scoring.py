@@ -40,8 +40,16 @@ class TestSpaceRankSystem(unittest.TestCase):
         all_ranks = SpaceRankSystem.get_all_ranks()
         self.assertEqual(len(all_ranks), 10)
         expected_names = [
-            "Cadet", "Navigator", "Pilot", "Explorer", "Captain",
-            "Commander", "Admiral", "Commodore", "Fleet Admiral", "Galactic Legend"
+            "Cadet",
+            "Navigator",
+            "Pilot",
+            "Explorer",
+            "Captain",
+            "Commander",
+            "Admiral",
+            "Commodore",
+            "Fleet Admiral",
+            "Galactic Legend",
         ]
         actual_names = [r["name"] for r in all_ranks]
         self.assertEqual(actual_names, expected_names)
@@ -107,15 +115,17 @@ class TestSpaceRankSystem(unittest.TestCase):
         self.assertGreaterEqual(rank["progress_pct"], 0)
         self.assertLessEqual(rank["progress_pct"], 100)
 
-    def test_get_next_rank(self):
+    def test_get_next_rank(self) -> None:
         """Test next rank calculation."""
         next_rank = SpaceRankSystem.get_next_rank(150)
+        assert next_rank is not None
         self.assertEqual(next_rank["name"], "Pilot")
         self.assertEqual(next_rank["points_needed"], 50)
 
-    def test_get_next_rank_from_pilot(self):
+    def test_get_next_rank_from_pilot(self) -> None:
         """Test next rank from Pilot."""
         next_rank = SpaceRankSystem.get_next_rank(250)
+        assert next_rank is not None
         self.assertEqual(next_rank["name"], "Explorer")
         self.assertEqual(next_rank["points_needed"], 100)
 
@@ -133,21 +143,24 @@ class TestSpaceRankSystem(unittest.TestCase):
 
     def test_rank_level(self):
         """Test numeric rank level (1-10)."""
-        self.assertEqual(SpaceRankSystem.calculate_rank_level(50), 1)   # Cadet
+        self.assertEqual(SpaceRankSystem.calculate_rank_level(50), 1)  # Cadet
         self.assertEqual(SpaceRankSystem.calculate_rank_level(150), 2)  # Navigator
         self.assertEqual(SpaceRankSystem.calculate_rank_level(250), 3)  # Pilot
         self.assertEqual(SpaceRankSystem.calculate_rank_level(450), 4)  # Explorer
         self.assertEqual(SpaceRankSystem.calculate_rank_level(650), 5)  # Captain
         self.assertEqual(SpaceRankSystem.calculate_rank_level(900), 6)  # Commander
-        self.assertEqual(SpaceRankSystem.calculate_rank_level(1200), 7) # Admiral
-        self.assertEqual(SpaceRankSystem.calculate_rank_level(1650), 8) # Commodore
-        self.assertEqual(SpaceRankSystem.calculate_rank_level(2000), 9) # Fleet Admiral
-        self.assertEqual(SpaceRankSystem.calculate_rank_level(2300), 10) # Galactic Legend
+        self.assertEqual(SpaceRankSystem.calculate_rank_level(1200), 7)  # Admiral
+        self.assertEqual(SpaceRankSystem.calculate_rank_level(1650), 8)  # Commodore
+        self.assertEqual(SpaceRankSystem.calculate_rank_level(2000), 9)  # Fleet Admiral
+        self.assertEqual(
+            SpaceRankSystem.calculate_rank_level(2300), 10
+        )  # Galactic Legend
 
-    def test_get_rank_by_name(self):
+    def test_get_rank_by_name(self) -> None:
         """Test getting rank by name."""
         rank = SpaceRankSystem.get_rank_by_name("Captain")
         self.assertIsNotNone(rank)
+        assert rank is not None
         self.assertEqual(rank["name"], "Captain")
         self.assertEqual(rank["min"], 550)
         self.assertEqual(rank["max"], 799)
@@ -163,28 +176,25 @@ class TestTokenCraftScorerV3(unittest.TestCase):
                 "sessionId": "session1",
                 "project": "project_a",
                 "message": "test message",
-                "timestamp": "2026-02-12T10:00:00Z"
+                "timestamp": "2026-02-12T10:00:00Z",
             },
             {
                 "sessionId": "session1",
                 "project": "project_a",
                 "message": "another message with more tokens",
-                "timestamp": "2026-02-12T10:05:00Z"
+                "timestamp": "2026-02-12T10:05:00Z",
             },
             {
                 "sessionId": "session2",
                 "project": "project_b",
                 "message": "different project session",
-                "timestamp": "2026-02-12T15:00:00Z"
+                "timestamp": "2026-02-12T15:00:00Z",
             },
         ]
 
         self.stats_data = {
             "models": {
-                "claude-sonnet-4.5": {
-                    "inputTokens": 50000,
-                    "outputTokens": 30000
-                }
+                "claude-sonnet-4.5": {"inputTokens": 50000, "outputTokens": 30000}
             }
         }
 
@@ -210,7 +220,7 @@ class TestTokenCraftScorerV3(unittest.TestCase):
             },
             "streak_info": {
                 "current": {"length": 0, "start_date": None, "last_session_date": None},
-                "best": {"length": 0, "start_date": None, "last_session_date": None}
+                "best": {"length": 0, "start_date": None, "last_session_date": None},
             },
             "seasonal_info": {
                 "current_season_score": 0,
@@ -223,24 +233,44 @@ class TestTokenCraftScorerV3(unittest.TestCase):
 
     def test_scorer_initialization_v3(self):
         """Test scorer initialization with v3.0."""
-        scorer = TokenCraftScorer(self.history_data, self.stats_data, rank=1, user_profile=self.user_profile_v3)
+        scorer = TokenCraftScorer(
+            self.history_data,
+            self.stats_data,
+            rank=1,
+            user_profile=self.user_profile_v3,
+        )
         self.assertIsNotNone(scorer)
         self.assertEqual(scorer.total_sessions, 2)
         self.assertEqual(scorer.total_tokens, 80000)
 
     def test_no_self_sufficiency_in_weights(self):
         """Test that self_sufficiency is removed from v3.0 weights."""
-        scorer = TokenCraftScorer(self.history_data, self.stats_data, rank=1, user_profile=self.user_profile_v3)
+        scorer = TokenCraftScorer(
+            self.history_data,
+            self.stats_data,
+            rank=1,
+            user_profile=self.user_profile_v3,
+        )
         self.assertNotIn("self_sufficiency", scorer.weights)
 
     def test_waste_awareness_category_exists(self):
         """Test that waste_awareness is a new v3.0 category."""
-        scorer = TokenCraftScorer(self.history_data, self.stats_data, rank=1, user_profile=self.user_profile_v3)
+        scorer = TokenCraftScorer(
+            self.history_data,
+            self.stats_data,
+            rank=1,
+            user_profile=self.user_profile_v3,
+        )
         self.assertIn("waste_awareness", scorer.weights)
 
     def test_smooth_token_efficiency_scale(self):
         """Test smooth logarithmic scale for token efficiency (not tiers)."""
-        scorer = TokenCraftScorer(self.history_data, self.stats_data, rank=1, user_profile=self.user_profile_v3)
+        scorer = TokenCraftScorer(
+            self.history_data,
+            self.stats_data,
+            rank=1,
+            user_profile=self.user_profile_v3,
+        )
         score_data = scorer.calculate_token_efficiency_score()
 
         # Should be smooth, not discrete tiers
@@ -255,7 +285,12 @@ class TestTokenCraftScorerV3(unittest.TestCase):
     def test_linear_cache_effectiveness_scale(self):
         """Test linear scale for cache effectiveness."""
         # Create scorer with cache data
-        scorer = TokenCraftScorer(self.history_data, self.stats_data, rank=1, user_profile=self.user_profile_v3)
+        scorer = TokenCraftScorer(
+            self.history_data,
+            self.stats_data,
+            rank=1,
+            user_profile=self.user_profile_v3,
+        )
         score_data = scorer.calculate_cache_effectiveness_score()
 
         self.assertIn("score", score_data)
@@ -268,7 +303,12 @@ class TestTokenCraftScorerV3(unittest.TestCase):
     def test_learning_growth_no_warmup_bonus(self):
         """Test learning growth removes warm-up bonus."""
         # With <10 sessions, should not get auto 25pts
-        scorer = TokenCraftScorer(self.history_data, self.stats_data, rank=1, user_profile=self.user_profile_v3)
+        scorer = TokenCraftScorer(
+            self.history_data,
+            self.stats_data,
+            rank=1,
+            user_profile=self.user_profile_v3,
+        )
         score_data = scorer.calculate_learning_growth_score()
 
         self.assertIn("score", score_data)
@@ -279,7 +319,12 @@ class TestTokenCraftScorerV3(unittest.TestCase):
 
     def test_total_score_v3_max(self):
         """Test total score max is 2300 (not 1450)."""
-        scorer = TokenCraftScorer(self.history_data, self.stats_data, rank=1, user_profile=self.user_profile_v3)
+        scorer = TokenCraftScorer(
+            self.history_data,
+            self.stats_data,
+            rank=1,
+            user_profile=self.user_profile_v3,
+        )
         score_data = scorer.calculate_total_score()
 
         self.assertIn("total_score", score_data)
@@ -293,7 +338,12 @@ class TestTokenCraftScorerV3(unittest.TestCase):
 
     def test_breakdown_has_10_categories(self):
         """Test breakdown contains all 10 v3.0 categories."""
-        scorer = TokenCraftScorer(self.history_data, self.stats_data, rank=1, user_profile=self.user_profile_v3)
+        scorer = TokenCraftScorer(
+            self.history_data,
+            self.stats_data,
+            rank=1,
+            user_profile=self.user_profile_v3,
+        )
         score_data = scorer.calculate_total_score()
 
         breakdown = score_data.get("breakdown", {})
@@ -469,7 +519,14 @@ class TestAchievementEngine(unittest.TestCase):
         achievements = AchievementEngine.ACHIEVEMENTS
         categories = set(a["category"] for a in achievements)
 
-        expected_categories = ["progression", "excellence", "streaks", "combos", "exploration", "special"]
+        expected_categories = [
+            "progression",
+            "excellence",
+            "streaks",
+            "combos",
+            "exploration",
+            "special",
+        ]
         for cat in expected_categories:
             self.assertIn(cat, categories)
 
@@ -481,12 +538,12 @@ class TestAchievementEngine(unittest.TestCase):
         self.assertIsNotNone(result)
         self.assertTrue(result.get("unlocked", False))
 
-    def test_check_progression_achievements(self):
+    def test_check_progression_achievements(self) -> None:
         """Test checking progression achievement unlocks."""
         engine = AchievementEngine(profile=None)
         user_data = {"current_rank": "Captain", "current_score": 650}
 
-        unlocked = engine.check_progression_achievements(user_data)
+        unlocked = engine.check_progression_achievements(user_data=user_data)
         # Should have unlocked some progression achievements
         self.assertIsInstance(unlocked, list)
 
@@ -569,8 +626,7 @@ class TestTimeBasedMechanics(unittest.TestCase):
     def test_apply_seasonal_reset(self):
         """Test applying seasonal reset adds to lifetime."""
         result = TimeBasedMechanics.apply_seasonal_reset(
-            current_season_score=100.0,
-            lifetime_score=50.0
+            current_season_score=100.0, lifetime_score=50.0
         )
 
         # 50% of season score should be added to lifetime
@@ -603,7 +659,7 @@ class TestMigrationEngine(unittest.TestCase):
             "scores": {
                 "token_efficiency": 300,
                 "self_sufficiency": 200,  # This gets removed
-            }
+            },
         }
 
         v3_profile = MigrationEngine.migrate_profile(v2_profile)
@@ -625,7 +681,7 @@ class TestMigrationEngine(unittest.TestCase):
                 "token_efficiency": 300,
                 "self_sufficiency": 200,  # This should be removed
                 "best_practices": 50,
-            }
+            },
         }
 
         v3_profile = MigrationEngine.migrate_profile(v2_profile)
@@ -721,8 +777,6 @@ class TestV3MaxScore(unittest.TestCase):
 
         # Should have bonus weights for streak, combo, achievements, etc.
         self.assertGreater(len(scorer.bonus_weights), 0)
-
-
 
 
 class TestRegressionDetector(unittest.TestCase):
@@ -822,7 +876,7 @@ class TestRegressionDetector(unittest.TestCase):
             current_score=current_score,
             current_efficiency=current_efficiency,
             personal_best_efficiency=personal_best_efficiency,
-            recent_scores=recent_scores
+            recent_scores=recent_scores,
         )
 
         self.assertTrue(analysis["has_regressed"])
@@ -870,7 +924,7 @@ class TestRegressionDetector(unittest.TestCase):
             current_score=400.0,
             current_efficiency=2500.0,
             personal_best_efficiency=1500.0,
-            recent_scores=[600.0, 550.0, 500.0]
+            recent_scores=[600.0, 550.0, 500.0],
         )
 
         guidance = RegressionDetector.get_recovery_guidance(analysis)
@@ -890,16 +944,13 @@ class TestV3IntegrationWithRegression(unittest.TestCase):
                 "sessionId": "session1",
                 "project": "project_a",
                 "message": "test message",
-                "timestamp": "2026-02-12T10:00:00Z"
+                "timestamp": "2026-02-12T10:00:00Z",
             },
         ]
 
         self.stats_data = {
             "models": {
-                "claude-sonnet-4.5": {
-                    "inputTokens": 50000,
-                    "outputTokens": 30000
-                }
+                "claude-sonnet-4.5": {"inputTokens": 50000, "outputTokens": 30000}
             }
         }
 
@@ -916,7 +967,12 @@ class TestV3IntegrationWithRegression(unittest.TestCase):
 
     def test_regression_info_in_total_score(self):
         """Test regression analysis included in total_score output."""
-        scorer = TokenCraftScorer(self.history_data, self.stats_data, rank=5, user_profile=self.user_profile_v3)
+        scorer = TokenCraftScorer(
+            self.history_data,
+            self.stats_data,
+            rank=5,
+            user_profile=self.user_profile_v3,
+        )
         score_data = scorer.calculate_total_score()
 
         self.assertIn("regression_analysis", score_data)
@@ -934,12 +990,19 @@ class TestV3IntegrationWithRegression(unittest.TestCase):
             "recent_session_scores": [600.0, 550.0, 500.0, 450.0],  # Consistent decline
         }
 
-        scorer = TokenCraftScorer(self.history_data, self.stats_data, rank=5, user_profile=profile_with_regression)
+        scorer = TokenCraftScorer(
+            self.history_data,
+            self.stats_data,
+            rank=5,
+            user_profile=profile_with_regression,
+        )
         score_data = scorer.calculate_total_score()
 
         regression = score_data["regression_analysis"]
         # Should detect multiple signals
-        self.assertGreater(regression.get("efficiency", {}).get("efficiency_drop_pct", -1), 0)
+        self.assertGreater(
+            regression.get("efficiency", {}).get("efficiency_drop_pct", -1), 0
+        )
 
 
 if __name__ == "__main__":
