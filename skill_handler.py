@@ -206,26 +206,31 @@ class TokenCraftHandler:
         self, score_data: Dict, rank_data: Dict, delta_data: Optional[Dict]
     ):
         """Check and award achievements."""
+
+        # Helper to safely get achievement IDs
+        def get_achievement_ids():
+            achievements = self.profile.get_achievements()
+            if not achievements:
+                return set()
+            # Filter out non-dict items and extract IDs
+            return {a["id"] for a in achievements if isinstance(a, dict) and "id" in a}
+
+        achievement_ids = get_achievement_ids()
+
         # First rank achievement
-        if rank_data["name"] == "Pilot" and not any(
-            a["id"] == "first_pilot" for a in self.profile.get_achievements()
-        ):
+        if rank_data["name"] == "Pilot" and "first_pilot" not in achievement_ids:
             self.profile.add_achievement(
                 "first_pilot", "First Pilot", "Achieved Pilot rank for the first time"
             )
 
         # Score milestones
         score = score_data["total_score"]
-        if score >= 500 and not any(
-            a["id"] == "halfway_there" for a in self.profile.get_achievements()
-        ):
+        if score >= 500 and "halfway_there" not in achievement_ids:
             self.profile.add_achievement(
                 "halfway_there", "Halfway There", "Reached 500 points"
             )
 
-        if score >= 1000 and not any(
-            a["id"] == "four_digits" for a in self.profile.get_achievements()
-        ):
+        if score >= 1000 and "four_digits" not in achievement_ids:
             self.profile.add_achievement(
                 "four_digits", "Four Digits", "Reached 1000+ points (Admiral level)"
             )
@@ -237,9 +242,7 @@ class TokenCraftHandler:
             if isinstance(efficiency_data, dict)
             else 0
         )
-        if efficiency_pct >= 30 and not any(
-            a["id"] == "efficiency_master" for a in self.profile.get_achievements()
-        ):
+        if efficiency_pct >= 30 and "efficiency_master" not in achievement_ids:
             self.profile.add_achievement(
                 "efficiency_master",
                 "Efficiency Master",
@@ -255,9 +258,7 @@ class TokenCraftHandler:
                 and rank_change.get("promoted")
             ):
                 promo_id = f"promoted_to_{rank_data['name'].lower()}"
-                if not any(
-                    a["id"] == promo_id for a in self.profile.get_achievements()
-                ):
+                if promo_id not in achievement_ids:
                     self.profile.add_achievement(
                         promo_id,
                         f"Promoted to {rank_data['name']}",
